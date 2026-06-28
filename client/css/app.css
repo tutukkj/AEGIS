@@ -1,256 +1,604 @@
-/* Estilos Globais Customizados */
+/* ==========================================================================
+   VARIÁVEIS E RESET MESTRE (Estilo Cyberpunk/Sci-Fi)
+   ========================================================================== */
+:root {
+  /* Cores Base - Estilo Landing */
+  --bg: #030303;
+  --bg-secondary: #050505;
+  --surface: rgba(10, 10, 12, 0.85);
+  --surface-hover: rgba(20, 20, 25, 0.9);
 
-/* Scrollbar Personalizado */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: hsl(225, 25%, 8%);
-}
-::-webkit-scrollbar-thumb {
-  background: hsl(225, 15%, 20%);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(250, 85%, 65%);
-}
+  /* Texto */
+  --fg: #d1d5db;
+  --fg-dim: #888888;
+  --fg-muted: #555555;
 
-/* Glassmorphism */
-.glass {
-  background: hsla(225, 20%, 12%, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid hsla(225, 15%, 25%, 0.4);
-}
+  /* Bordas e Decoração */
+  --border: rgba(255, 255, 255, 0.06);
+  --border-active: rgba(255, 255, 255, 0.15);
 
-.glass-light {
-  background: hsla(225, 20%, 15%, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid hsla(225, 15%, 25%, 0.2);
-}
+  /* Destaques - Teal (accent) */
+  --accent: #5EEAD4;
+  --accent-dim: rgba(94, 234, 212, 0.15);
 
-/* Efeito de Brilho (Glow) */
-.glow-accent {
-  box-shadow: 0 0 20px 2px hsla(250, 85%, 65%, 0.15);
-}
+  /* Cores de Status */
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --info: #60a5fa;
 
-.glow-success {
-  box-shadow: 0 0 20px 2px hsla(150, 70%, 45%, 0.15);
+  /* Tipografia */
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Grid de Fundo */
+  --grid-color: rgba(255, 255, 255, 0.02);
+  --grid-size: 40px;
 }
 
-/* Transições Suaves Padrão */
-.transition-all-300 {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Animações */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(12px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes scaleUp {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.2s ease-out forwards;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-scale-up {
-  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Customizações do Editor Split Markdown */
-.editor-pane {
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* Estilização para tags markdown renderizadas */
-.markdown-preview h1 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
-  border-bottom: 1px solid hsl(225, 15%, 20%);
-  padding-bottom: 0.5rem;
-}
-
-.markdown-preview h2 {
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin-top: 1.25rem;
-  margin-bottom: 0.5rem;
-}
-
-.markdown-preview h3 {
-  font-size: 1.15rem;
-  font-weight: 600;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.markdown-preview p {
-  margin-bottom: 1rem;
-  line-height: 1.6;
-  color: hsl(220, 10%, 75%);
-}
-
-.markdown-preview a {
-  color: hsl(250, 85%, 65%);
-  text-decoration: none;
-  border-bottom: 1px dashed transparent;
-  transition: border-color 0.2s;
-}
-
-.markdown-preview a:hover {
-  border-bottom-color: hsl(250, 85%, 65%);
-}
-
-.markdown-preview ul, .markdown-preview ol {
-  margin-left: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.markdown-preview ul {
-  list-style-type: disc;
-}
-
-.markdown-preview ol {
-  list-style-type: decimal;
-}
-
-.markdown-preview li {
-  margin-bottom: 0.25rem;
-}
-
-.markdown-preview code {
-  background-color: hsl(225, 20%, 14%);
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85em;
-  color: hsl(38, 92%, 55%);
-}
-
-.markdown-preview pre {
-  background-color: hsl(225, 20%, 10%);
-  border: 1px solid hsl(225, 15%, 16%);
-  border-radius: 8px;
-  padding: 1rem;
-  overflow-x: auto;
-  margin-bottom: 1rem;
-}
-
-.markdown-preview pre code {
-  background-color: transparent;
+/* Reset e Base */
+* {
+  margin: 0;
   padding: 0;
-  color: inherit;
-  font-size: 0.9em;
+  box-sizing: border-box;
 }
 
-.markdown-preview blockquote {
-  border-left: 4px solid hsl(250, 85%, 65%);
-  background-color: hsla(250, 85%, 65%, 0.05);
-  padding: 0.75rem 1rem;
-  border-radius: 0 8px 8px 0;
-  margin-bottom: 1rem;
-}
-
-.markdown-preview table {
+html,
+body {
   width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 1rem;
+  min-height: 100%;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  cursor: default;
 }
 
-.markdown-preview th, .markdown-preview td {
-  border: 1px solid hsl(225, 15%, 20%);
-  padding: 0.5rem 0.75rem;
-  text-align: left;
+/* Forçar reset de caixa alta para campos de digitação e visualizações ricas */
+input, textarea, select, [contenteditable="true"], .preview-content, .wysiwyg-editor, .markdown-body, .note-content {
+  text-transform: none !important;
 }
 
-.markdown-preview th {
-  background-color: hsl(225, 20%, 14%);
-  font-weight: 600;
+/* Scrollbar Customizada */
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
 }
 
-.markdown-preview tr:nth-child(even) {
-  background-color: hsla(225, 20%, 14%, 0.3);
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* Callouts estilo Obsidian */
-.callout {
-  border-left: 4px solid;
-  border-radius: 0 8px 8px 0;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
+::-webkit-scrollbar-thumb {
+  background: var(--fg-muted);
+  border-radius: 2px;
 }
 
-.callout-title {
-  font-weight: 600;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg);
+}
+
+/* ==========================================================================
+   CAMADA 1: FUNDO E OVERLAYS
+   ========================================================================== */
+#webgl-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+#webgl-container.interactive {
+  pointer-events: auto;
+}
+
+.background-grid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image:
+    linear-gradient(var(--grid-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background:
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),
+    linear-gradient(90deg,
+      rgba(255, 0, 0, 0.03),
+      rgba(0, 255, 0, 0.01),
+      rgba(0, 0, 255, 0.03));
+  background-size: 100% 3px, 6px 100%;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.25;
+}
+
+.vignette-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(ellipse at center,
+      transparent 60%,
+      rgba(0, 0, 0, 0.5) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   CAMADA 2: UI FIXA (HEADER/FOOTER)
+   ========================================================================== */
+.fixed-header {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
+  pointer-events: none;
+  padding: 8px 16px;
+  background: rgba(3, 3, 3, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.fixed-header .header-left {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
-  text-transform: uppercase;
-  font-size: 0.75rem;
+  gap: 2px;
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.fixed-header .header-left .brand {
+  font-size: 14px;
+  letter-spacing: 2px;
+}
+
+.fixed-header .header-left .brand-sub {
+  color: var(--fg-muted);
+  font-weight: 100;
+  font-size: 14px;
+}
+
+.fixed-header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--fg-dim);
+  font-size: 9px;
+  pointer-events: auto;
+}
+
+.fixed-header .header-right .accent-text {
+  color: var(--fg);
+}
+
+.fixed-header .header-right .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.fixed-header .header-right span {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.fixed-header .header-right span:hover {
+  color: var(--fg);
+}
+
+/* Footer Fixo */
+.fixed-footer {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
+  pointer-events: none;
+  padding: 6px 16px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--fg-muted);
   letter-spacing: 0.05em;
 }
 
-.callout-note {
-  border-color: hsl(200, 85%, 55%);
-  background-color: hsla(200, 85%, 55%, 0.05);
-}
-.callout-note .callout-title {
-  color: hsl(200, 85%, 55%);
+.fixed-footer .footer-left {
+  display: flex;
+  gap: 24px;
 }
 
-.callout-tip {
-  border-color: hsl(150, 70%, 45%);
-  background-color: hsla(150, 70%, 45%, 0.05);
-}
-.callout-tip .callout-title {
-  color: hsl(150, 70%, 45%);
+.fixed-footer .footer-left .blink {
+  animation: blink 1s infinite step-end;
+  color: var(--fg);
 }
 
-.callout-warning {
-  border-color: hsl(38, 92%, 55%);
-  background-color: hsla(38, 92%, 55%, 0.05);
-}
-.callout-warning .callout-title {
-  color: hsl(38, 92%, 55%);
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
 }
 
-.callout-danger {
-  border-color: hsl(0, 75%, 55%);
-  background-color: hsla(0, 75%, 55%, 0.05);
-}
-.callout-danger .callout-title {
-  color: hsl(0, 75%, 55%);
+.fixed-footer .footer-right {
+  display: flex;
+  gap: 16px;
 }
 
-/* WikiLinks renderizados */
-.wikilink {
-  color: hsl(250, 85%, 65%);
+.fixed-footer .accent-text {
+  color: var(--fg);
+}
+
+/* ==========================================================================
+   GLASSMORPHISM E UTILITÁRIOS
+   ========================================================================== */
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+}
+
+.glass-hover {
+  transition: all 0.3s ease;
+}
+
+.glass-hover:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-active);
+}
+
+.glow-accent {
+  box-shadow: 0 0 40px 5px rgba(94, 234, 212, 0.12);
+}
+
+/* ==========================================================================
+   ANIMAÇÕES GERAIS
+   ========================================================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================================================
+   ESTILOS PARA O PAINEL DE NÓ (GRAFO)
+   ========================================================================== */
+#node-panel {
+  position: fixed;
+  top: 80px;
+  right: -400px;
+  bottom: 80px;
+  width: 340px;
+  background: rgba(3, 3, 3, 0.95);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--fg);
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  z-index: 200;
+  transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(20px);
+  box-shadow: -20px 0 40px rgba(0, 0, 0, 0.5);
+}
+
+#node-panel.active {
+  right: 20px;
+}
+
+#node-panel .node-title {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--fg);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+#node-panel .node-desc {
+  color: var(--fg-dim);
+  font-size: 9px;
+  line-height: 1.6;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  text-transform: none;
+}
+
+#node-panel .node-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+#node-panel .node-row span:first-child {
+  color: var(--fg-muted);
+  letter-spacing: 0.05em;
+}
+
+#node-panel .node-row span:last-child {
+  color: var(--fg);
   font-weight: 500;
-  border-bottom: 1px dashed hsla(250, 85%, 65%, 0.4);
 }
-.wikilink:hover {
-  border-bottom-style: solid;
+
+#node-panel .btn-action {
+  margin-top: auto;
+  padding: 12px;
+  border: 1px solid var(--fg);
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  transition: all 0.3s;
+  border-radius: 6px;
+  text-transform: uppercase;
 }
-.wikilink-broken {
-  color: hsl(0, 75%, 55%);
-  border-bottom-color: hsla(0, 75%, 55%, 0.4);
+
+#node-panel .btn-action:hover {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+#node-panel .btn-close {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--fg-muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s;
+  border-radius: 6px;
+}
+
+#node-panel .btn-close:hover {
+  color: var(--fg);
+  border-color: var(--fg);
+}
+
+/* ==========================================================================
+   COMMAND PALETTE - ESTILO LANDING
+   ========================================================================== */
+#command-palette-container .glass {
+  background: rgba(3, 3, 3, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+#command-palette-container input {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+#command-palette-container input::placeholder {
+  color: var(--fg-muted);
+  text-transform: none;
+}
+
+#command-palette-container .palette-item {
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+#command-palette-container .palette-item.bg-accent {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ==========================================================================
+   TOAST - ESTILO LANDING
+   ========================================================================== */
+#toast-container .glass {
+  background: rgba(3, 3, 3, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   WIDGET POMODORO - ESTILO LANDING
+   ========================================================================== */
+#pomodoro-floating-widget .glass {
+  background: rgba(3, 3, 3, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+#pomodoro-floating-widget .text-4xl {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   OVERRIDES PARA COMPONENTES EXISTENTES
+   ========================================================================== */
+
+/* Sidebar */
+#sidebar-container a {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+#sidebar-container .bg-accent {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+#sidebar-container .border-accent {
+  border-color: var(--fg);
+}
+
+/* Dashboard Cards */
+.glass.rounded-2xl {
+  border-radius: 8px;
+}
+
+/* Kanban Board */
+.kanban-card {
+  border-radius: 6px;
+}
+
+/* MindMap */
+#mindmaps-view-container .glass {
+  border-radius: 8px;
+}
+
+/* ==========================================================================
+   RESPONSIVIDADE
+   ========================================================================== */
+@media (max-width: 768px) {
+  .fixed-header {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    padding: 6px 12px;
+    font-size: 8px;
+  }
+
+  .fixed-header .header-left .brand {
+    font-size: 10px;
+  }
+
+  .fixed-header .header-right {
+    gap: 8px;
+    font-size: 7px;
+  }
+
+  .fixed-footer {
+    display: none;
+  }
+
+  #sidebar-container {
+    width: 56px;
+  }
+
+  #sidebar-container a span {
+    display: none;
+  }
+
+  #node-panel {
+    width: 280px;
+    padding: 16px 20px;
+    top: 60px;
+    bottom: 60px;
+  }
+
+  #node-panel.active {
+    right: 10px;
+  }
+
+  #command-palette-container .glass {
+    max-width: 95%;
+  }
+}
+
+@media (max-width: 480px) {
+  .fixed-header .header-right span:not(.status-dot):not(.accent-text) {
+    display: none;
+  }
+
+  #node-panel {
+    width: 240px;
+    right: -280px;
+  }
+
+  #node-panel.active {
+    right: 8px;
+  }
 }

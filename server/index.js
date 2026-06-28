@@ -19,6 +19,7 @@ import kanbanRoutes from './routes/api/kanban.js';
 import projectsRoutes from './routes/api/projects.js';
 import mindmapsRoutes from './routes/api/mindmaps.js';
 import settingsRoutes from './routes/api/settings.js';
+import flowsRoutes from './routes/api/flows.js';
 // Páginas SPA
 import pageRoutes from './routes/pages.js';
 // WebSocket Server
@@ -57,6 +58,7 @@ app.use('/api/kanban', kanbanRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/mindmaps', mindmapsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/flows', flowsRoutes);
 
 // Servir arquivos estáticos do diretório storage/assets (caso o usuário salve imagens)
 app.use('/assets', express.static(PATHS.assets));

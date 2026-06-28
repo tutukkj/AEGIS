@@ -32,13 +32,19 @@ router.get('/', (req, res) => {
     
     const articles = db.prepare(query).all(...params);
     
-    // Fazer parse das strings JSON
-    const parsedArticles = articles.map(art => ({
-      ...art,
-      tags: JSON.parse(art.tags || '[]'),
-      aliases: JSON.parse(art.aliases || '[]'),
-      related: JSON.parse(art.related || '[]')
-    }));
+    // Fazer parse das strings JSON e calcular categoria
+    const parsedArticles = articles.map(art => {
+      const parts = art.file_path.split(/[/\\]/);
+      const category = parts.length > 1 ? parts[0] : 'Geral';
+      
+      return {
+        ...art,
+        category,
+        tags: JSON.parse(art.tags || '[]'),
+        aliases: JSON.parse(art.aliases || '[]'),
+        related: JSON.parse(art.related || '[]')
+      };
+    });
     
     return res.json(parsedArticles);
   } catch (err) {

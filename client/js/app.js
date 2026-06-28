@@ -1,10 +1,14 @@
-// Aegis Client Principal Launcher
+// public/js/app.js
+
+// public/js/app.js - Trecho atualizado
+
 import { store } from './store.js';
 import { router } from './router.js';
 import { Sidebar } from './components/Sidebar.js';
 import { Toast } from './components/Toast.js';
 import { CommandPalette } from './components/CommandPalette.js';
 import { PomodoroTimer } from './components/PomodoroTimer.js';
+import { GlobeScene } from './components/GlobeScene.js';
 import { el, on } from './utils/dom.js';
 
 class App {
@@ -12,90 +16,135 @@ class App {
     this.sidebar = null;
     this.commandPalette = null;
     this.pomodoroTimer = null;
+    this.globeScene = null;
     this.ws = null;
   }
 
   async start() {
-    // 1. Verificar autenticação no servidor
     try {
       const auth = await fetch('/api/auth/check').then(r => r.json());
-      
+
       if (!auth.authenticated) {
-        // Se não autenticado, redireciona para /login (o Express cuida disso, mas garantimos aqui)
         window.location.href = '/login';
         return;
       }
-      
-      // Armazenar usuário no store global
+
       store.setState('user', auth.user);
-      
-      // 2. Montar interface da casca do app
+
+      // 2. Inicializar a cena 3D (MOTOR DE CONSTELAÇÃO)
+      this.globeScene = new GlobeScene('webgl-container');
+      window.globeScene = this.globeScene;
+
+      // 3. Montar interface
       this.sidebar = new Sidebar('sidebar-container');
       this.sidebar.render();
-      
-      // 3. Inicializar a Paleta de Comandos (Ctrl+K)
+
+      // 4. Inicializar Paleta de Comandos
       this.commandPalette = new CommandPalette('command-palette-container');
-      
-      // 4. Inicializar o Cronômetro Pomodoro Flutuante
+
+      // 5. Inicializar Pomodoro
       this.pomodoroTimer = new PomodoroTimer();
-      
-      // 5. Inicializar Roteador SPA
+
+      // 6. Inicializar Roteador SPA
       router.init();
-      
-      // 5. Inicializar eventos globais do app
+
+      // 7. Configurar eventos globais
       this.setupGlobalEvents();
-      
-      // 6. Conectar ao WebSocket para sincronização em tempo real
+
+      // 8. Conectar WebSocket
       this.connectWebSocket();
-      
-      console.log('Aegis inicializado com sucesso.');
-      Toast.success('Bem-vindo de volta ao Aegis!');
-      
+
+      // 9. Carregar dados iniciais do grafo
+      await this.loadInitialGraphData();
+
+      console.log('✦ Aegis Cosmos inicializado.');
+      Toast.success('Sistema Aegis online. Constelação pronta para exploração.');
+
     } catch (err) {
       console.error('Erro ao inicializar Aegis:', err);
-      Toast.error('Erro de conexão ao carregar Aegis. Tente recarregar.');
+      Toast.error('Erro de conexão ao carregar Aegis.');
+    }
+  }
+
+  async loadInitialGraphData() {
+    try {
+      const graphData = await fetch('/api/graph').then(r => r.json());
+
+      if (graphData && graphData.nodes && graphData.nodes.length > 0) {
+        const nodes = graphData.nodes.map(node => ({
+          id: node.data.id,
+          label: node.data.label,
+          color: node.data.realColor || 0x5EEAD4,
+          position: node.position || {
+            x: (Math.random() - 0.5) * 20,
+            y: (Math.random() - 0.5) * 20,
+            z: (Math.random() - 0.5) * 10
+          },
+          data: {
+            slug: node.data.slug,
+            title: node.data.title,
+            description: node.data.description,
+            difficulty: node.data.difficulty,
+            status: node.data.status,
+            roadmap: node.data.roadmap,
+            estimatedHours: node.data.estimated_hours,
+            category: node.data.category,
+            tags: node.data.tags || []
+          }
+        }));
+
+        const edges = graphData.edges.map(edge => ({
+          source: edge.data.source,
+          target: edge.data.target
+        }));
+
+        if (this.globeScene) {
+          this.globeScene.addGraphNodes(nodes, edges);
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar dados do grafo:', err);
     }
   }
 
   setupGlobalEvents() {
-    // Menu Dropdown do Usuário
+    // Menu do usuário
     const userMenuBtn = el('#user-menu-btn');
     const userDropdown = el('#user-dropdown');
-    
+
     if (userMenuBtn && userDropdown) {
       on(userMenuBtn, 'click', (e) => {
         e.stopPropagation();
         userDropdown.classList.toggle('hidden');
       });
-      
+
       on(document, 'click', () => {
         userDropdown.classList.add('hidden');
       });
     }
 
-    // Botão de Logout
+    // Logout
     const logoutBtn = el('#logout-btn');
     if (logoutBtn) {
       on(logoutBtn, 'click', async () => {
         try {
           const res = await fetch('/api/auth/logout', { method: 'POST' }).then(r => r.json());
           if (res.success) {
-            Toast.success('Logout concluído.');
+            Toast.success('Desconectado do sistema.');
             setTimeout(() => {
               window.location.href = '/login';
             }, 1000);
           }
         } catch (err) {
-          Toast.error('Falha ao deslogar.');
+          Toast.error('Falha ao desconectar.');
         }
       });
     }
 
-    // Gatilho de busca rápida (Ctrl+K)
+    // Busca rápida (Ctrl+K)
     const searchTrigger = el('#quick-search-trigger');
     if (searchTrigger) {
       on(searchTrigger, 'click', () => {
-        // Disparar o atalho Ctrl+K
         const event = new KeyboardEvent('keydown', {
           key: 'k',
           ctrlKey: true,
@@ -109,33 +158,32 @@ class App {
   connectWebSocket() {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProtocol}//${window.location.host}`;
-    
     const wsStatusEl = el('#ws-status');
 
     const connect = () => {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('Conexão WebSocket estabelecida.');
+        console.log('🔗 Conexão WebSocket estabelecida.');
         store.setState('wsConnected', true);
         if (wsStatusEl) {
-          wsStatusEl.className = 'w-2.5 h-2.5 rounded-full bg-success';
+          wsStatusEl.className = 'w-2 h-2 rounded-full bg-success';
           wsStatusEl.title = 'Conectado em tempo real';
         }
       };
 
       this.ws.onclose = () => {
-        console.warn('Conexão WebSocket fechada. Tentando reconectar...');
+        console.warn('⚠️ Conexão WebSocket fechada. Reconectando...');
         store.setState('wsConnected', false);
         if (wsStatusEl) {
-          wsStatusEl.className = 'w-2.5 h-2.5 rounded-full bg-error animate-pulse';
+          wsStatusEl.className = 'w-2 h-2 rounded-full bg-error animate-pulse';
           wsStatusEl.title = 'Desconectado. Tentando reconectar...';
         }
         setTimeout(connect, 3000);
       };
 
       this.ws.onerror = (err) => {
-        console.error('Erro de WebSocket:', err);
+        console.error('❌ Erro de WebSocket:', err);
       };
 
       this.ws.onmessage = (event) => {
@@ -143,7 +191,7 @@ class App {
           const message = JSON.parse(event.data);
           this.handleWebSocketMessage(message);
         } catch (err) {
-          console.error('Erro ao processar mensagem do servidor WS:', err);
+          console.error('Erro ao processar mensagem WS:', err);
         }
       };
     };
@@ -153,20 +201,22 @@ class App {
 
   handleWebSocketMessage(message) {
     const { event, payload } = message;
-    console.log(`Evento WS recebido: ${event}`, payload);
-    
-    // Toast informativo de mudanças de arquivos detectadas pelo watcher
+    console.log(`📡 Evento WS: ${event}`, payload);
+
     if (event === 'file:updated') {
-      Toast.info(`Arquivo atualizado: ${payload.title || payload.slug}`);
+      Toast.info(`📄 Arquivo atualizado: ${payload.title || payload.slug}`);
     } else if (event === 'file:created') {
-      Toast.success(`Novo arquivo detectado: ${payload.title || payload.slug}`);
+      Toast.success(`📄 Novo arquivo: ${payload.title || payload.slug}`);
     } else if (event === 'file:deleted') {
-      Toast.warning(`Arquivo deletado: ${payload.slug}`);
+      Toast.warning(`🗑️ Arquivo deletado: ${payload.slug}`);
+    } else if (event === 'graph:updated') {
+      // Recarregar grafo quando houver mudanças
+      this.loadInitialGraphData();
     }
   }
 }
 
-// Inicializar e rodar o app no carregamento do DOM
+// Inicializar
 document.addEventListener('DOMContentLoaded', () => {
   const app = new App();
   app.start();

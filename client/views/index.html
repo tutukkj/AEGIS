@@ -1,148 +1,1980 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="h-full">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aegis — Learning Operating System</title>
-  <!-- Google Fonts: Inter & JetBrains Mono -->
+
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  
-  <!-- Tailwind CSS CDN -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
-  <!-- Estilos base customizados -->
-  <link rel="stylesheet" href="/css/app.css">
-  
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
+            sans: ['JetBrains Mono', 'monospace'],
           },
           colors: {
-            bg: 'hsl(225, 25%, 8%)',
-            surface: 'hsl(225, 20%, 12%)',
-            'surface-hover': 'hsl(225, 20%, 16%)',
-            border: 'hsl(225, 15%, 20%)',
-            accent: 'hsl(250, 85%, 65%)',
-            'accent-hover': 'hsl(250, 85%, 72%)',
-            'accent-glow': 'rgba(110, 89, 242, 0.15)',
-            textPrimary: 'hsl(220, 15%, 90%)',
-            textSecondary: 'hsl(220, 10%, 55%)',
-            textMuted: 'hsl(220, 8%, 40%)',
-            success: 'hsl(150, 70%, 45%)',
-            warning: 'hsl(38, 92%, 55%)',
-            error: 'hsl(0, 75%, 55%)',
-            info: 'hsl(200, 85%, 55%)'
+            bg: '#030303',
+            surface: 'rgb(10 10 12 / <alpha-value>)',
+            'surface-hover': 'rgb(20 20 25 / <alpha-value>)',
+            border: 'rgb(255 255 255 / 0.06)',
+            accent: '#5EEAD4',
+            'accent-hover': '#4dd4bf',
+            textPrimary: '#d1d5db',
+            textSecondary: '#888888',
+            textMuted: '#555555',
+            success: '#34d399',
+            warning: '#fbbf24',
+            error: '#f87171',
+            info: '#60a5fa',
           }
         }
       }
     }
   </script>
-</head>
-<body class="h-full overflow-hidden bg-bg text-textPrimary font-sans">
 
-  <!-- Layout Principal -->
-  <div class="h-full flex overflow-hidden">
-    
-    <!-- Barra Lateral (Sidebar) -->
-    <aside id="sidebar-container" class="w-64 border-r border-border bg-surface/50 backdrop-blur-md flex flex-col flex-shrink-0 z-20"></aside>
-    
-    <!-- Área de Conteúdo Principal -->
-    <div class="flex-1 flex flex-col overflow-hidden min-w-0">
-      
-      <!-- Barra Superior (Topbar) -->
-      <header class="h-14 border-b border-border bg-surface/30 backdrop-blur-md flex items-center justify-between px-6 z-10">
-        <!-- Breadcrumbs & Título da página -->
-        <div id="breadcrumb-container" class="flex items-center gap-2 text-sm"></div>
-        
-        <!-- Controles de Usuário & Timer Pomodoro rápido -->
-        <div class="flex items-center gap-4">
-          <!-- Atalho de Busca Rápida -->
-          <button id="quick-search-trigger" class="flex items-center gap-2 bg-black/30 border border-border hover:border-accent/40 rounded-xl px-3 py-1.5 text-xs text-textSecondary transition-colors" title="Buscar (Ctrl+K)">
-            <i data-lucide="search" class="w-3.5 h-3.5"></i>
-            <span>Buscar...</span>
-            <kbd class="bg-surface border border-border px-1.5 py-0.5 rounded text-[10px] text-textMuted font-mono">Ctrl+K</kbd>
-          </button>
-          
-          <!-- Estado da Conexão Websocket -->
-          <div id="ws-status" class="w-2.5 h-2.5 rounded-full bg-textMuted" title="Desconectado"></div>
-          
-          <!-- Menu Usuário / Logout -->
-          <div class="relative">
-            <button id="user-menu-btn" class="w-8 h-8 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-accent text-xs font-semibold hover:bg-accent/30 transition-colors">
-              AD
-            </button>
-            <!-- Dropdown do Usuário -->
-            <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-surface border border-border rounded-xl shadow-xl py-1 z-30">
-              <a href="#settings" class="flex items-center gap-2 px-4 py-2 text-xs hover:bg-surface-hover text-textPrimary transition-colors">
-                <i data-lucide="settings" class="w-4 h-4"></i>
-                <span>Configurações</span>
-              </a>
-              <hr class="border-border my-1">
-              <button id="logout-btn" class="w-full flex items-center gap-2 px-4 py-2 text-xs hover:bg-surface-hover text-error text-left transition-colors">
-                <i data-lucide="log-out" class="w-4 h-4"></i>
-                <span>Sair do Aegis</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-      
-      <!-- Container das Páginas SPA -->
-      <main id="main-content" class="flex-1 overflow-y-auto min-w-0 relative"></main>
-    </div>
-  </div>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Widget Pomodoro Flutuante -->
-  <div id="pomodoro-widget-container" class="fixed bottom-6 right-6 z-40"></div>
-
-  <!-- Paleta de Comandos (Ctrl+K Overlay) -->
-  <div id="command-palette-container" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-24 px-4 z-50"></div>
-
-  <!-- Container de Notificações (Toast) -->
-  <div id="toast-container" class="fixed bottom-6 left-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-  <!-- Inclusão de Scripts das Bibliotecas -->
-  <!-- Marked.js (Markdown → HTML) - Carregado em Phase 2 -->
+  <!-- Marked.js -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  
-  <!-- Cytoscape.js (Visualização de Grafo) - Carregado em Phase 3 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.29.2/cytoscape.min.js"></script>
-  
-  <!-- Sortable.js (Kanban Drag and Drop) - Carregado em Phase 6 -->
+
+  <!-- Sortable.js (Kanban) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
-  
-  <!-- KaTeX (Fórmulas Matemáticas LaTeX) -->
+
+  <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-  
-  <!-- Mermaid.js (Diagramas e Fluxogramas) -->
+
+  <!-- Mermaid.js -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10.8.0/dist/mermaid.min.js"></script>
   <script>
-    // Inicializar Mermaid com configurações escuras
     mermaid.initialize({
       startOnLoad: false,
       theme: 'dark',
       securityLevel: 'loose',
       themeVariables: {
-        background: '#13151a',
-        primaryColor: '#6e59f2',
-        primaryTextColor: '#e2e8f0',
-        lineColor: '#2d313f'
+        background: '#030303',
+        primaryColor: '#ffffff',
+        primaryTextColor: '#d1d5db',
+        lineColor: '#333333'
       }
     });
   </script>
-  
-  <!-- Aplicação (JS Modules) -->
-  <script type="module" src="/js/app.js"></script>
+
+  <!-- Turndown (HTML to Markdown Converter) -->
+  <script src="https://unpkg.com/turndown/dist/turndown.js"></script>
+  <script src="https://unpkg.com/turndown-plugin-gfm/dist/turndown-plugin-gfm.js"></script>
+
+  <!-- Estilos Customizados -->
+  <link rel="stylesheet" href="/css/app.css">
+
+  <style>
+    /* ==========================================================================
+           ESTILOS AEGIS - TERMINAL/HUD
+           ========================================================================== */
+    :root {
+      --bg: #030303;
+      --fg: #d1d5db;
+      --dim: #2a2a2a;
+      --accent: #5EEAD4;
+      --accent-dim: rgba(94, 234, 212, 0.15);
+      --font-main: 'JetBrains Mono', monospace;
+      --grid-color: rgba(255, 255, 255, 0.02);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-active: rgba(255, 255, 255, 0.15);
+      --surface: rgba(10, 10, 12, 0.85);
+      --surface-hover: rgba(20, 20, 25, 0.9);
+      --fg-dim: #888888;
+      --fg-muted: #555555;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --error: #f87171;
+      --info: #60a5fa;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-main);
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      overflow-x: hidden;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+      cursor: default;
+    }
+
+    input, textarea, select, [contenteditable="true"], .preview-content, .wysiwyg-editor, .markdown-body, .note-content {
+      text-transform: none !important;
+    }
+
+    /* Scrollbar Customizada */
+    ::-webkit-scrollbar {
+      width: 3px;
+      height: 3px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--fg-muted);
+      border-radius: 2px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--fg);
+    }
+
+    /* ==========================================================================
+           CAMADAS DE FUNDO
+           ========================================================================== */
+    #webgl-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: auto;
+    }
+
+    .background-grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-image:
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .crt-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background:
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+      background-size: 100% 3px, 6px 100%;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0.25;
+    }
+
+    .vignette-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+           SCROLL INDICATOR
+           ========================================================================== */
+    #scroll-indicator {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      pointer-events: auto;
+      font-family: var(--font-main);
+      animation: bounce 2s infinite;
+      transition: all 0.3s ease;
+    }
+
+    #scroll-indicator button {
+      background: rgba(3, 3, 3, 0.85);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 12px 24px;
+      font-size: 9px;
+      font-weight: bold;
+      letter-spacing: 0.15em;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(94, 234, 212, 0.2);
+      transition: all 0.3s ease;
+      font-family: var(--font-main);
+    }
+
+    #scroll-indicator button:hover {
+      background: var(--accent);
+      color: var(--bg);
+      box-shadow: 0 0 25px rgba(94, 234, 212, 0.5);
+      transform: scale(1.05);
+    }
+
+    #scroll-indicator.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* HUD Overlays (Velasspace style) */
+    #hud-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease-in-out;
+    }
+
+    #hud-overlay.hud-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Target Reticle */
+    .hud-reticle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100px;
+      height: 100px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .reticle-bracket {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--accent);
+      opacity: 0.8;
+    }
+
+    .reticle-bracket.top-left {
+      top: 0;
+      left: 0;
+      border-right: none;
+      border-bottom: none;
+    }
+
+    .reticle-bracket.top-right {
+      top: 0;
+      right: 0;
+      border-left: none;
+      border-bottom: none;
+    }
+
+    .reticle-bracket.bottom-left {
+      bottom: 0;
+      left: 0;
+      border-right: none;
+      border-top: none;
+    }
+
+    .reticle-bracket.bottom-right {
+      bottom: 0;
+      right: 0;
+      border-left: none;
+      border-top: none;
+    }
+
+    .reticle-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 14px;
+      color: var(--accent);
+      font-weight: bold;
+      opacity: 0.8;
+    }
+
+    /* Left and Right panels */
+    .hud-panel-left {
+      position: absolute;
+      top: 80px;
+      left: 24px;
+      width: 240px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .hud-panel-right {
+      position: absolute;
+      top: 80px;
+      right: 24px;
+      width: 240px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .hud-box {
+      background: rgba(3, 3, 3, 0.7);
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 8px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .hud-label {
+      display: block;
+      font-size: 8px;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      margin-bottom: 2px;
+      font-weight: bold;
+    }
+
+    .hud-val {
+      font-size: 10px;
+      color: var(--fg);
+      font-family: var(--font-mono);
+      word-break: break-all;
+    }
+
+    @keyframes bounce {
+
+      0%,
+      100% {
+        transform: translateX(-50%) translateY(0);
+      }
+
+      50% {
+        transform: translateX(-50%) translateY(-6px);
+      }
+    }
+
+    /* ==========================================================================
+           NAVBAR
+           ========================================================================== */
+    #navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(3, 3, 3, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--dim);
+      padding: 8px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: transform 0.4s ease;
+      pointer-events: auto;
+      font-family: var(--font-main);
+      transform: translateY(-100%);
+    }
+
+    #navbar.visible {
+      transform: translateY(0);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--fg);
+    }
+
+    .nav-brand .brand-accent {
+      color: var(--accent);
+    }
+
+    .nav-brand .brand-dim {
+      color: var(--dim);
+      font-weight: 100;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 8px;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+    }
+
+    .nav-links a {
+      color: var(--dim);
+      text-decoration: none;
+      transition: color 0.3s;
+      cursor: pointer;
+      padding: 4px 8px;
+      border: 1px solid transparent;
+    }
+
+    .nav-links a:hover {
+      color: var(--fg);
+    }
+
+    .nav-links a.active {
+      color: var(--accent);
+      border-color: var(--dim);
+    }
+
+    .nav-links .sep {
+      color: var(--dim);
+      opacity: 0.3;
+    }
+
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 7px;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+    }
+
+    .nav-status .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.2;
+      }
+    }
+
+    .nav-status .user-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1px solid var(--dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7px;
+      color: var(--dim);
+      cursor: pointer;
+      transition: all 0.3s;
+      background: transparent;
+      font-family: var(--font-main);
+    }
+
+    .nav-status .user-btn:hover {
+      border-color: var(--fg);
+      color: var(--fg);
+    }
+
+    /* ==========================================================================
+           APP LAYER
+           ========================================================================== */
+    #app-layer {
+      position: relative;
+      z-index: 10;
+      margin-top: 100vh;
+      min-height: 100vh;
+      background: rgba(3, 3, 3, 0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--dim);
+      pointer-events: auto;
+      overflow: hidden;
+      font-family: var(--font-main);
+    }
+
+    #app-layer .h-full {
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    #sidebar-container {
+      width: 200px;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    /* Topbar */
+    .topbar {
+      height: 56px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10, 10, 12, 0.5);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .topbar .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      color: var(--fg-dim);
+    }
+
+    .topbar .breadcrumb a {
+      color: var(--fg-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .topbar .breadcrumb a:hover {
+      color: var(--fg);
+    }
+
+    .topbar .breadcrumb .current {
+      color: var(--fg);
+      font-weight: 700;
+    }
+
+    .topbar .actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .topbar .actions .search-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 12px;
+      font-size: 9px;
+      color: var(--fg-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--font-main);
+    }
+
+    .topbar .actions .search-btn:hover {
+      border-color: var(--border-active);
+      color: var(--fg);
+    }
+
+    .topbar .actions .search-btn kbd {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      padding: 0 6px;
+      border-radius: 4px;
+      font-size: 8px;
+      color: var(--fg-muted);
+    }
+
+    .topbar .actions .ws-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--fg-muted);
+    }
+
+    .topbar .actions .ws-status.online {
+      background: var(--success);
+    }
+
+    .topbar .actions .ws-status.offline {
+      background: var(--error);
+      animation: pulse-dot 1s infinite;
+    }
+
+    .topbar .actions .user-menu {
+      position: relative;
+    }
+
+    .topbar .actions .user-menu .user-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: var(--fg-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+      background: transparent;
+      font-family: var(--font-main);
+    }
+
+    .topbar .actions .user-menu .user-btn:hover {
+      border-color: var(--fg);
+      color: var(--fg);
+    }
+
+    #navbar .user-menu .dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      margin-top: 8px;
+      width: 180px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 0;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
+    #navbar .user-menu .dropdown.open {
+      display: block;
+    }
+
+    #navbar .user-menu .dropdown a,
+    #navbar .user-menu .dropdown button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 9px;
+      color: var(--fg-dim);
+      text-decoration: none;
+      background: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      font-family: var(--font-main);
+      transition: all 0.2s;
+    }
+
+    #navbar .user-menu .dropdown a:hover,
+    #navbar .user-menu .dropdown button:hover {
+      background: var(--surface-hover);
+      color: var(--fg);
+    }
+
+    #navbar .user-menu .dropdown hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 4px 0;
+    }
+
+    /* Main Content */
+    #main-content {
+      flex: 1;
+      overflow-y: auto;
+      min-width: 0;
+      position: relative;
+    }
+
+    /* ==========================================================================
+           PAINEL DE NÓ
+           ========================================================================== */
+    #node-panel {
+      position: fixed;
+      top: 80px;
+      right: -400px;
+      bottom: 80px;
+      width: 340px;
+      background: rgba(3, 3, 3, 0.95);
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--fg);
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      z-index: 200;
+      transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(20px);
+      box-shadow: -20px 0 40px rgba(0, 0, 0, 0.5);
+    }
+
+    #node-panel.active {
+      right: 20px;
+    }
+
+    #node-panel .node-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    #node-panel .node-title {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      color: var(--fg);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    #node-panel .node-close {
+      color: var(--fg-muted);
+      cursor: pointer;
+      transition: color 0.2s;
+      background: none;
+      border: none;
+      font-size: 14px;
+    }
+
+    #node-panel .node-close:hover {
+      color: var(--fg);
+    }
+
+    #node-panel .node-desc {
+      color: var(--fg-dim);
+      font-size: 9px;
+      line-height: 1.6;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      text-transform: none;
+    }
+
+    #node-panel .node-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 9px;
+      font-family: var(--font-mono);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    #node-panel .node-row span:first-child {
+      color: var(--fg-muted);
+      letter-spacing: 0.05em;
+    }
+
+    #node-panel .node-row span:last-child {
+      color: var(--fg);
+      font-weight: 500;
+    }
+
+    #node-panel .node-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    #node-panel .node-tags .tag {
+      border: 1px solid var(--border);
+      padding: 2px 10px;
+      font-size: 7px;
+      color: var(--fg-dim);
+      letter-spacing: 0.05em;
+      border-radius: 4px;
+    }
+
+    #node-panel .node-connections {
+      flex: 1;
+      overflow-y: auto;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    #node-panel .node-connections .conn-label {
+      font-size: 9px;
+      color: var(--fg-muted);
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    #node-panel .node-connections .conn-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 8px;
+      color: var(--fg-dim);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    #node-panel .node-connections .conn-item .conn-type {
+      color: var(--fg-muted);
+    }
+
+    #node-panel .node-connections .conn-item .conn-target {
+      color: var(--fg);
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    #node-panel .node-connections .conn-item .conn-target:hover {
+      color: var(--accent);
+    }
+
+    #node-panel .btn-action {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid var(--fg);
+      background: transparent;
+      color: var(--fg);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      transition: all 0.3s;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    #node-panel .btn-action:hover {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    /* ==========================================================================
+           WIDGETS
+           ========================================================================== */
+    #pomodoro-widget-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 40;
+    }
+
+    #command-palette-container {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(12px);
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 80px;
+      z-index: 50;
+    }
+
+    #command-palette-container.hidden {
+      display: none;
+    }
+
+    #command-palette-container:not(.hidden) {
+      display: flex;
+    }
+
+    #toast-container {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      pointer-events: none;
+      align-items: center;
+    }
+
+    /* ==========================================================================
+           LOADING
+           ========================================================================== */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+      transition: opacity 0.8s ease;
+    }
+
+    #loading-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #loading-screen .loader {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--dim);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #loading-screen .loader-text {
+      font-size: 8px;
+      color: var(--dim);
+      letter-spacing: 4px;
+    }
+
+    /* ==========================================================================
+           GLASS UTILITY
+           ========================================================================== */
+    .glass {
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+    }
+
+    .glass-hover {
+      transition: all 0.3s ease;
+    }
+
+    .glass-hover:hover {
+      background: var(--surface-hover);
+      border-color: var(--border-active);
+    }
+
+    /* ==========================================================================
+           ANIMAÇÕES
+           ========================================================================== */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes scaleUp {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+
+    .animate-slide-up {
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .animate-scale-up {
+      animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* ==========================================================================
+           RESPONSIVIDADE
+           ========================================================================== */
+    @media (max-width: 768px) {
+      #navbar {
+        padding: 6px 12px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      #sidebar-container {
+        width: 56px;
+      }
+
+      #sidebar-container a span {
+        display: none;
+      }
+
+      #node-panel {
+        width: 280px;
+        padding: 16px 20px;
+        top: 60px;
+        bottom: 60px;
+      }
+
+      #node-panel.active {
+        right: 10px;
+      }
+
+      .topbar .actions .search-btn span {
+        display: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+
+      .nav-status .dot,
+      .nav-status span {
+        display: none;
+      }
+
+      #node-panel {
+        width: 240px;
+        right: -280px;
+      }
+
+      #node-panel.active {
+        right: 8px;
+      }
+
+      .topbar .actions .search-btn kbd {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============================================================
+       LOADING SCREEN
+       ============================================================ -->
+  <div id="loading-screen">
+    <div class="loader"></div>
+    <div class="loader-text">INICIANDO AEGIS...</div>
+  </div>
+
+  <!-- ============================================================
+       CAMADAS DE FUNDO
+       ============================================================ -->
+  <div class="background-grid"></div>
+  <div class="crt-overlay"></div>
+  <div class="vignette-overlay"></div>
+
+  <!-- ============================================================
+       MOTOR 3D (GLOBE SCENE)
+       ============================================================ -->
+  <div id="webgl-container"></div>
+
+  <!-- ============================================================
+       HUD CYBERPUNK OVERLAYS (VELASSPACE STYLE)
+       ============================================================ -->
+  <div id="hud-overlay" class="pointer-events-none select-none z-30">
+    <!-- Retícula de Mira Central -->
+    <div class="hud-reticle">
+      <div class="reticle-bracket top-left"></div>
+      <div class="reticle-bracket top-right"></div>
+      <div class="reticle-bracket bottom-left"></div>
+      <div class="reticle-bracket bottom-right"></div>
+      <div class="reticle-center">+</div>
+    </div>
+
+    <!-- Painel Esquerdo -->
+    <div class="hud-panel-left">
+      <div class="hud-box">
+        <span class="hud-label">COGNITIVE NETWORK STATUS</span>
+        <span class="hud-val">NO SHIFTS DETECTED / CORE SECURE</span>
+      </div>
+      <div class="hud-box mt-4">
+        <span class="hud-label">TARGET COORDINATES</span>
+        <span class="hud-val">DEC: -12.44° / RA: 18h36m / SHIFT: STABLE</span>
+      </div>
+      <div class="hud-box mt-4">
+        <span class="hud-label">A.E.G.I.S. QUANTUM FLUX</span>
+        <span class="hud-val text-accent animate-pulse">FLOW: 1024bps / 100% HEALTH</span>
+      </div>
+    </div>
+
+    <!-- Painel Direito -->
+    <div class="hud-panel-right">
+      <div class="hud-box">
+        <span class="hud-label border-b border-border/40 pb-1 mb-2 block">ACTIVE MODULES</span>
+        <div class="flex justify-between text-[10px] py-0.5 font-bold">
+          <span>01 BACKEND ENGINE</span>
+          <span class="text-accent">ONLINE</span>
+        </div>
+        <div class="flex justify-between text-[10px] py-0.5 font-bold">
+          <span>02 COGNITIVE AI</span>
+          <span class="text-pink-400">ACTIVE</span>
+        </div>
+        <div class="flex justify-between text-[10px] py-0.5 font-bold">
+          <span>03 KANBAN BOARD</span>
+          <span class="text-amber-400">STABLE</span>
+        </div>
+        <div class="flex justify-between text-[10px] py-0.5 font-bold">
+          <span>04 FLUX CANVAS</span>
+          <span class="text-blue-400">ONLINE</span>
+        </div>
+      </div>
+      
+      <div class="hud-box mt-4 flex items-center justify-between">
+        <div class="flex flex-col">
+          <span class="hud-label">TIME METRICS</span>
+          <span class="hud-val">UPTIME: <span id="hud-uptime">00:00:00</span></span>
+        </div>
+        <!-- Barcode -->
+        <div class="flex gap-[2px] h-6 items-end bg-transparent opacity-80 pl-2">
+          <div class="w-[2px] h-5 bg-white"></div>
+          <div class="w-[4px] h-6 bg-white"></div>
+          <div class="w-[1px] h-4 bg-white"></div>
+          <div class="w-[3px] h-6 bg-white"></div>
+          <div class="w-[1px] h-3 bg-white"></div>
+          <div class="w-[5px] h-6 bg-white"></div>
+          <div class="w-[2px] h-5 bg-white"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       DASHBOARD ENTRY BUTTON
+       ============================================================ -->
+  <div id="scroll-indicator">
+    <button id="btn-launch-system">
+      ABRIR DASHBOARD
+    </button>
+  </div>
+
+  <!-- ============================================================
+       NAVBAR
+       ============================================================ -->
+  <nav id="navbar">
+    <div class="nav-brand">
+      <span class="brand-accent">\\\</span>
+      AEGIS<span class="brand-dim">OS</span>
+    </div>
+
+    <div class="nav-links">
+      <a href="#" id="nav-btn-cosmos" data-page="cosmos">COSMOS</a>
+      <span class="sep">|</span>
+      <a href="#dashboard" class="active" data-page="dashboard">DASHBOARD</a>
+      <span class="sep">|</span>
+      <a href="#explorer" data-page="explorer">EXPLORADOR</a>
+      <span class="sep">|</span>
+      <a href="#graph" data-page="graph" id="btn-open-graph">GRAFO</a>
+      <span class="sep">|</span>
+      <a href="#roadmaps" data-page="roadmaps">ROADMAPS</a>
+      <span class="sep">|</span>
+      <a href="#kanban" data-page="kanban">KANBAN</a>
+      <span class="sep">|</span>
+      <a href="#fluxos" data-page="fluxos">FLUXOS</a>
+    </div>
+
+    <div class="nav-status flex items-center gap-4">
+      <button id="quick-search-trigger" class="search-btn flex items-center gap-2 bg-black/30 border border-border rounded px-3 py-1.5 text-[8px] text-textSecondary hover:text-textPrimary hover:border-border-active transition-all font-mono">
+        <i data-lucide="search" class="w-3 h-3"></i>
+        <span>BUSCAR</span>
+        <kbd class="bg-black/40 border border-border px-1.5 py-0.5 rounded text-[7px] text-textMuted font-mono">Ctrl+K</kbd>
+      </button>
+      <div id="ws-status" class="ws-status offline w-2 h-2 rounded-full" title="Desconectado"></div>
+      <span class="dot"></span>
+      <span>RECORDING</span>
+      <div class="user-menu relative">
+        <button class="user-btn" id="userMenuBtn">AD</button>
+        <div id="user-dropdown" class="dropdown">
+          <a href="#settings">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+            <span>CONFIGURAÇÕES</span>
+          </a>
+          <hr>
+          <button id="logout-btn">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+            <span>SAIR</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============================================================
+       APP LAYER (SIDEBAR + CONTEÚDO)
+       ============================================================ -->
+  <div id="app-layer">
+    <div class="h-full flex overflow-hidden">
+
+      <!-- Área de Conteúdo -->
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+        <!-- Conteúdo das Páginas -->
+        <main id="main-content" class="flex-1 overflow-y-auto min-w-0 relative"></main>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PAINEL DE NÓ
+       ============================================================ -->
+  <div id="node-panel">
+    <div class="node-header">
+      <div class="node-title" id="p-title">NODE_NAME</div>
+      <button id="p-close" class="node-close">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <div class="node-desc" id="p-desc">Descrição do arquivo carregada do frontmatter markdown.</div>
+
+    <div class="node-row">
+      <span>STATUS</span>
+      <span id="p-status">EM PROGRESSO</span>
+    </div>
+    <div class="node-row">
+      <span>DIFICULDADE</span>
+      <span id="p-diff">INTERMEDIÁRIO</span>
+    </div>
+    <div class="node-row">
+      <span>ROADMAP</span>
+      <span id="p-roadmap">GERAL</span>
+    </div>
+    <div class="node-row">
+      <span>TEMPO ESTIMADO</span>
+      <span id="p-time">N/A</span>
+    </div>
+
+    <div class="node-tags" id="p-tags"></div>
+
+    <div class="node-connections">
+      <span class="conn-label">CONEXÕES</span>
+      <div id="p-connections"></div>
+    </div>
+
+    <button class="btn-action" id="p-open-editor">ABRIR NOTA</button>
+  </div>
+
+  <!-- ============================================================
+       WIDGETS E OVERLAYS
+       ============================================================ -->
+  <div id="pomodoro-widget-container"></div>
+
+  <div id="command-palette-container" class="hidden">
+    <div class="glass w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl border border-border/80 flex flex-col">
+      <div class="flex items-center gap-3 px-5 border-b border-border/60 bg-surface/20">
+        <i data-lucide="search" class="w-4 h-4 text-textSecondary flex-shrink-0"></i>
+        <input type="text" id="palette-input" placeholder="Digite para buscar notas ou comandos rápidos..."
+          class="w-full bg-transparent py-4 text-sm focus:outline-none placeholder:text-gray-500 font-mono">
+        <kbd
+          class="bg-surface border border-border px-1.5 py-0.5 rounded text-[10px] text-textMuted font-mono select-none">ESC</kbd>
+      </div>
+      <div id="palette-list" class="max-h-[350px] overflow-y-auto p-2 flex flex-col gap-0.5"></div>
+      <div
+        class="border-t border-border/40 bg-surface/20 px-5 py-2.5 flex items-center justify-between text-[10px] text-textMuted select-none">
+        <div class="flex items-center gap-3">
+          <span class="flex items-center gap-1"><kbd
+              class="bg-surface border border-border px-1 rounded font-mono">↑↓</kbd> Navegar</span>
+          <span class="flex items-center gap-1"><kbd
+              class="bg-surface border border-border px-1 rounded font-mono">Enter</kbd> Selecionar</span>
+        </div>
+        <span>Aegis Learning OS</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- ============================================================
+       IMPORTAÇÃO DE MÓDULOS
+       ============================================================ -->
+  <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+            }
+        }
+    </script>
+
+  <!-- ============================================================
+       SCRIPTS DA APLICAÇÃO
+       ============================================================ -->
+  <script type="module">
+    import { store } from '/js/store.js';
+    import { router } from '/js/router.js';
+    import { Sidebar } from '/js/components/Sidebar.js';
+    import { Toast } from '/js/components/Toast.js';
+    import { CommandPalette } from '/js/components/CommandPalette.js';
+    import { PomodoroTimer } from '/js/components/PomodoroTimer.js';
+    import { GlobeScene } from '/js/components/GlobeScene.js';
+    import { el, on } from '/js/utils/dom.js';
+
+    // ==========================================
+    // CLASSE APP
+    // ==========================================
+    class App {
+      constructor() {
+        this.sidebar = null;
+        this.commandPalette = null;
+        this.pomodoroTimer = null;
+        this.globeScene = null;
+        this.ws = null;
+        this.isDashboardVisible = false;
+      }
+
+      async start() {
+        try {
+          // Verificar autenticação
+          const auth = await fetch('/api/auth/check').then(r => r.json());
+          if (!auth.authenticated) {
+            window.location.href = '/login';
+            return;
+          }
+
+          store.setState('user', auth.user);
+
+          // 1. Inicializar GlobeScene (motor 3D unificado)
+          this.globeScene = new GlobeScene('webgl-container');
+          window.globeScene = this.globeScene;
+
+          // Configurar callbacks do GlobeScene
+          this.globeScene.onNodeSelected = (data) => {
+            this.showNodePanel(data);
+          };
+          this.globeScene.onNodeDeselected = () => {
+            this.hideNodePanel();
+          };
+          this.globeScene.onModeChange = (mode) => {
+            console.log(`Modo: ${mode}`);
+            const btn = document.getElementById('btn-launch-system');
+            if (btn) {
+              btn.innerHTML = 'ABRIR DASHBOARD';
+            }
+            if (mode === 'graph') {
+              Toast.info('Modo Grafo ativado');
+            } else {
+              Toast.info('Modo Solar ativado');
+            }
+          };
+
+          // 2. Sidebar
+          // this.sidebar = new Sidebar('sidebar-container');
+          // this.sidebar.render();
+
+          // 3. Command Palette
+          this.commandPalette = new CommandPalette('command-palette-container');
+
+          // 4. Pomodoro
+          this.pomodoroTimer = new PomodoroTimer();
+
+          // 5. Router
+          router.init();
+
+          // Inicializar Uptime do HUD
+          const startTime = Date.now();
+          setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+            const seconds = String(elapsed % 60).padStart(2, '0');
+            const hudUptime = document.getElementById('hud-uptime');
+            if (hudUptime) {
+              hudUptime.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+          }, 1000);
+
+          // 6. Eventos globais
+          this.setupGlobalEvents();
+
+          // 7. WebSocket
+          this.connectWebSocket();
+
+          // 8. Carregar dados do grafo
+          await this.loadInitialGraphData();
+
+          // 9. Esconder loading
+          document.getElementById('loading-screen').classList.add('hidden');
+
+          // 10. Mostrar scroll indicator
+          setTimeout(() => {
+            document.getElementById('scroll-indicator').classList.remove('hidden');
+          }, 500);
+
+          Toast.success('Sistema Aegis online. Constelação pronta para exploração.');
+          console.log('✦ Aegis Cosmos inicializado.');
+
+        } catch (err) {
+          console.error('Erro ao inicializar Aegis:', err);
+          Toast.error('Erro de conexão ao carregar Aegis.');
+          document.getElementById('loading-screen').classList.add('hidden');
+        }
+      }
+
+      // ==========================================
+      // CARREGAR DADOS DO GRAFO
+      // ==========================================
+
+      async loadInitialGraphData() {
+        try {
+          const graphData = await fetch('/api/graph').then(r => r.json());
+
+          try {
+            const articles = await fetch('/api/articles').then(r => r.json());
+            if (this.globeScene && articles) {
+              this.globeScene.updateSolarSystemData(articles);
+            }
+          } catch (err) {
+            console.warn('Erro ao atualizar orbitas dos planetas:', err);
+          }
+
+          if (graphData && graphData.nodes && graphData.nodes.length > 0) {
+            const nodes = graphData.nodes.map(node => {
+              const slugToColor = {
+                // Backend (Teal)
+                'python': 0x5EEAD4,
+                'fastapi': 0x5EEAD4,
+                'docker': 0x5EEAD4,
+                
+                // AI (Pink)
+                'llm': 0xF472B6,
+                'rag': 0xF472B6,
+                'agents': 0xF472B6,
+                
+                // Math (Yellow)
+                'linear': 0xFBBF24,
+                'linear_algebra': 0xFBBF24,
+                'calculus': 0xFBBF24,
+                
+                // Frontend (Blue)
+                'react': 0x60A5FA,
+                'tailwind': 0x60A5FA,
+                
+                // DevOps (Green)
+                'k8s': 0x34D399,
+                'terraform': 0x34D399
+              };
+              const nodeSlug = String(node.data.id || '').toLowerCase();
+              const rColor = slugToColor[nodeSlug] || 0x5EEAD4;
+
+              return {
+                id: node.data.id,
+                label: node.data.label,
+                color: rColor,
+                position: node.position || {
+                  x: (Math.random() - 0.5) * 20,
+                  y: (Math.random() - 0.5) * 20,
+                  z: (Math.random() - 0.5) * 10
+                },
+                data: {
+                  slug: node.data.id,
+                  title: node.data.label,
+                  description: node.data.description,
+                  difficulty: node.data.difficulty,
+                  status: node.data.status,
+                  roadmap: node.data.roadmap,
+                  estimatedHours: node.data.estimated_hours,
+                  category: node.data.category,
+                  tags: node.data.tags || []
+                }
+              };
+            });
+
+            const edges = graphData.edges.map(edge => ({
+              source: edge.data.source,
+              target: edge.data.target
+            }));
+
+            if (this.globeScene) {
+              this.globeScene.addGraphNodes(nodes, edges);
+            }
+          }
+        } catch (err) {
+          console.warn('Erro ao carregar dados do grafo:', err);
+        }
+      }
+
+      // ==========================================
+      // PAINEL DE NÓ
+      // ==========================================
+
+      showNodePanel(data) {
+        const panel = document.getElementById('node-panel');
+        const title = document.getElementById('p-title');
+        const desc = document.getElementById('p-desc');
+        const status = document.getElementById('p-status');
+        const diff = document.getElementById('p-diff');
+        const roadmap = document.getElementById('p-roadmap');
+        const time = document.getElementById('p-time');
+        const tagsContainer = document.getElementById('p-tags');
+        const connectionsContainer = document.getElementById('p-connections');
+
+        // Preencher dados
+        const nodeData = data.data || data;
+        const openBtn = document.getElementById('p-open-editor');
+        const connLabel = panel.querySelector('.node-connections .conn-label');
+
+        if (data.isNoteMoon) {
+          let foundNode = null;
+          if (this.globeScene) {
+            foundNode = this.globeScene.getGraphNodes().find(n => n.id === data.id);
+          }
+          if (foundNode) {
+            this.showNodePanel(foundNode);
+            return;
+          } else {
+            window.location.hash = `#editor/${data.id}`;
+            this.scrollToDashboard();
+            this.hideNodePanel();
+            return;
+          }
+        }
+
+        if (data.isPlanet) {
+          title.textContent = data.name || 'SISTEMA SOLAR';
+          desc.textContent = data.description || 'Exploração do sistema solar.';
+          status.textContent = 'SISTEMA';
+          diff.textContent = 'ROADMAP';
+          roadmap.textContent = data.name;
+          time.textContent = `${data.items ? data.items.length : 0} NOTAS`;
+
+          // Tags
+          tagsContainer.innerHTML = '';
+          const tagEl = document.createElement('span');
+          tagEl.className = 'tag';
+          tagEl.textContent = '#sistema-solar';
+          tagsContainer.appendChild(tagEl);
+
+          // Rótulo da seção de conexões
+          if (connLabel) {
+            connLabel.textContent = 'NOTAS (.MD)';
+          }
+
+          // Renderizar lista de arquivos .md
+          connectionsContainer.innerHTML = '';
+          if (data.items && data.items.length > 0) {
+            data.items.forEach(item => {
+              const div = document.createElement('div');
+              div.className = 'conn-item';
+              div.innerHTML = `
+                <span class="conn-type">📄</span>
+                <span class="conn-target" data-id="${item.id}">${item.name}</span>
+              `;
+              const targetSpan = div.querySelector('.conn-target');
+              targetSpan.addEventListener('click', () => {
+                window.location.hash = `#editor/${item.id}`;
+                this.scrollToDashboard();
+                this.hideNodePanel();
+                if (this.globeScene) {
+                  this.globeScene.deselectNode();
+                }
+              });
+              connectionsContainer.appendChild(div);
+            });
+          } else {
+            const div = document.createElement('div');
+            div.className = 'conn-item';
+            div.innerHTML = `<span class="conn-type">NENHUMA NOTA</span>`;
+            connectionsContainer.appendChild(div);
+          }
+
+          // Configurar botão de ação principal
+          openBtn.style.display = 'block';
+          openBtn.textContent = 'ABRIR EXPLORADOR';
+          openBtn.onclick = () => {
+            window.location.hash = '#explorer';
+            this.scrollToDashboard();
+            this.hideNodePanel();
+            if (this.globeScene) {
+              this.globeScene.deselectNode();
+            }
+          };
+        } else {
+          title.textContent = nodeData.title || data.label || 'NÓ SEM NOME';
+          desc.textContent = nodeData.description || 'Sem descrição disponível.';
+
+          // Status
+          const statusMap = {
+            'not_started': 'NÃO INICIADO',
+            'studying': 'EM ESTUDO',
+            'review': 'EM REVISÃO',
+            'completed': 'CONCLUÍDO'
+          };
+          status.textContent = statusMap[nodeData.status] || nodeData.status || 'N/A';
+
+          // Dificuldade
+          const diffMap = {
+            'beginner': 'INICIANTE',
+            'intermediate': 'INTERMEDIÁRIO',
+            'advanced': 'AVANÇADO'
+          };
+          diff.textContent = diffMap[nodeData.difficulty] || nodeData.difficulty || 'N/A';
+
+          roadmap.textContent = nodeData.roadmap || 'GERAL';
+          time.textContent = nodeData.estimatedHours ? `${nodeData.estimatedHours}h` : 'N/A';
+
+          // Tags
+          tagsContainer.innerHTML = '';
+          if (nodeData.tags && nodeData.tags.length > 0) {
+            nodeData.tags.forEach(tag => {
+              const el = document.createElement('span');
+              el.className = 'tag';
+              el.textContent = `#${tag}`;
+              tagsContainer.appendChild(el);
+            });
+          } else {
+            const el = document.createElement('span');
+            el.className = 'tag';
+            el.textContent = '#sem-tags';
+            tagsContainer.appendChild(el);
+          }
+
+          // Rótulo da seção de conexões
+          if (connLabel) {
+            connLabel.textContent = 'CONEXÕES';
+          }
+
+          // Conexões
+          connectionsContainer.innerHTML = '';
+          if (this.globeScene) {
+            const edges = this.globeScene.getGraphEdges();
+            const conns = edges.filter(e => e.source === data.id || e.target === data.id);
+
+            if (conns.length > 0) {
+              conns.forEach(conn => {
+                const otherId = conn.source === data.id ? conn.target : conn.source;
+                const nodes = this.globeScene.getGraphNodes();
+                const other = nodes.find(n => n.id === otherId);
+                const div = document.createElement('div');
+                div.className = 'conn-item';
+                div.innerHTML = `
+                                  <span class="conn-type">→</span>
+                                  <span class="conn-target" data-id="${otherId}">${other?.label || otherId}</span>
+                              `;
+                const targetSpan = div.querySelector('.conn-target');
+                targetSpan.addEventListener('click', () => {
+                  const nodeData = this.globeScene.getGraphNodes().find(n => n.id === otherId);
+                  if (nodeData) {
+                    this.showNodePanel(nodeData);
+                    if (this.globeScene) {
+                      this.globeScene.selectNode(nodeData);
+                    }
+                  }
+                });
+                connectionsContainer.appendChild(div);
+              });
+            } else {
+              const div = document.createElement('div');
+              div.className = 'conn-item';
+              div.innerHTML = `<span class="conn-type">NENHUMA CONEXÃO</span>`;
+              connectionsContainer.appendChild(div);
+            }
+          }
+
+          // Configurar botão de ação principal
+          openBtn.style.display = 'block';
+          openBtn.textContent = 'ABRIR NOTA';
+          openBtn.onclick = () => {
+            if (nodeData.slug) {
+              window.location.hash = `#editor/${nodeData.slug}`;
+              this.scrollToDashboard();
+              this.hideNodePanel();
+              if (this.globeScene) {
+                this.globeScene.deselectNode();
+              }
+            }
+          };
+        }
+
+        // Fechar
+        document.getElementById('p-close').onclick = () => {
+          this.hideNodePanel();
+          if (this.globeScene) {
+            this.globeScene.deselectNode();
+          }
+        };
+
+        panel.classList.add('active');
+      }
+
+      hideNodePanel() {
+        document.getElementById('node-panel').classList.remove('active');
+      }
+
+      // ==========================================
+      // EVENTOS GLOBAIS
+      // ==========================================
+
+      setupGlobalEvents() {
+        // Botão "Iniciar Sistema" - scroll para dashboard
+        const launchBtn = document.getElementById('btn-launch-system');
+        if (launchBtn) {
+          on(launchBtn, 'click', () => {
+            this.scrollToDashboard();
+          });
+        }
+
+        // Transições controladas apenas por botão
+
+        // Menu do usuário
+        const userMenuBtn = el('#userMenuBtn');
+        const userDropdown = el('#user-dropdown');
+        if (userMenuBtn && userDropdown) {
+          on(userMenuBtn, 'click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('open');
+          });
+          on(document, 'click', () => {
+            userDropdown.classList.remove('open');
+          });
+        }
+
+        // Logout
+        const logoutBtn = el('#logout-btn');
+        if (logoutBtn) {
+          on(logoutBtn, 'click', async () => {
+            try {
+              const res = await fetch('/api/auth/logout', { method: 'POST' }).then(r => r.json());
+              if (res.success) {
+                Toast.success('Desconectado do sistema.');
+                setTimeout(() => {
+                  window.location.href = '/login';
+                }, 1000);
+              }
+            } catch (err) {
+              Toast.error('Falha ao desconectar.');
+            }
+          });
+        }
+
+        // Busca rápida (Ctrl+K)
+        const searchTrigger = el('#quick-search-trigger');
+        if (searchTrigger) {
+          on(searchTrigger, 'click', () => {
+            const event = new KeyboardEvent('keydown', {
+              key: 'k',
+              ctrlKey: true,
+              bubbles: true
+            });
+            document.dispatchEvent(event);
+          });
+        }
+
+        // Atalho para alternar modo (Ctrl+Shift+M)
+        document.addEventListener('keydown', (e) => {
+          if (e.ctrlKey && e.shiftKey && (e.key === 'm' || e.key === 'M')) {
+            e.preventDefault();
+            if (this.globeScene) {
+              this.globeScene.toggleMode();
+            }
+          }
+        });
+
+        // Navegação da navbar
+        document.querySelectorAll('.nav-links a').forEach(link => {
+          on(link, 'click', async (e) => {
+            e.preventDefault();
+            const page = link.getAttribute('data-page');
+
+            if (page === 'cosmos') {
+              if (this.globeScene && this.globeScene.mode !== 'solar') {
+                this.globeScene.transitionTo('solar');
+              }
+              if (this.isDashboardVisible) {
+                this.scrollToSolar();
+              }
+              window.location.hash = '#cosmos';
+              return;
+            }
+
+            if (page === 'graph') {
+              // Recarregar dados do grafo ao acessar a página
+              await this.loadInitialGraphData();
+              // Abrir modo grafo
+              if (this.globeScene && this.globeScene.mode !== 'graph') {
+                this.globeScene.transitionTo('graph');
+              }
+              if (this.isDashboardVisible) {
+                this.scrollToSolar();
+              }
+              window.location.hash = '#graph';
+              return;
+            }
+
+            document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+
+            if (!this.isDashboardVisible) {
+              this.scrollToDashboard();
+            }
+
+            // Atualizar breadcrumb
+            const pageLabels = {
+              cosmos: 'Cosmos',
+              dashboard: 'Dashboard',
+              explorer: 'Explorador',
+              roadmaps: 'Roadmaps',
+              kanban: 'Kanban',
+              projects: 'Projetos',
+              settings: 'Configurações'
+            };
+            const current = document.getElementById('breadcrumb-current');
+            if (current) {
+              current.textContent = pageLabels[page] || page;
+            }
+
+            window.location.hash = `#${page}`;
+          });
+        });
+      }
+
+      // ==========================================
+      // SCROLL
+      // ==========================================
+
+      scrollToDashboard() {
+        if (this.isDashboardVisible) return;
+        this.isDashboardVisible = true;
+
+        document.getElementById('scroll-indicator').classList.add('hidden');
+        const hud = document.getElementById('hud-overlay');
+        if (hud) hud.classList.add('hud-hidden');
+        document.getElementById('navbar').classList.add('visible');
+
+        if (this.globeScene && this.globeScene.controls) {
+          this.globeScene.controls.autoRotate = false;
+          this.globeScene.controls.enableZoom = true;
+        }
+
+        window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+      }
+
+      scrollToSolar() {
+        if (!this.isDashboardVisible) return;
+        this.isDashboardVisible = false;
+
+        const btn = document.getElementById('btn-launch-system');
+        if (btn) {
+          btn.innerHTML = 'ABRIR DASHBOARD';
+        }
+
+        document.getElementById('scroll-indicator').classList.remove('hidden');
+        const hud = document.getElementById('hud-overlay');
+        if (hud) hud.classList.remove('hud-hidden');
+        document.getElementById('navbar').classList.remove('visible');
+
+        if (this.globeScene && this.globeScene.controls) {
+          this.globeScene.controls.autoRotate = true;
+          this.globeScene.controls.enableZoom = false;
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // ==========================================
+      // WEBSOCKET
+      // ==========================================
+
+      connectWebSocket() {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}`;
+        const wsStatusEl = el('#ws-status');
+
+        const connect = () => {
+          this.ws = new WebSocket(wsUrl);
+
+          this.ws.onopen = () => {
+            console.log('🔗 Conexão WebSocket estabelecida.');
+            store.setState('wsConnected', true);
+            if (wsStatusEl) {
+              wsStatusEl.className = 'ws-status online';
+              wsStatusEl.title = 'Conectado em tempo real';
+            }
+          };
+
+          this.ws.onclose = () => {
+            console.warn('⚠️ Conexão WebSocket fechada. Reconectando...');
+            store.setState('wsConnected', false);
+            if (wsStatusEl) {
+              wsStatusEl.className = 'ws-status offline';
+              wsStatusEl.title = 'Desconectado. Tentando reconectar...';
+            }
+            setTimeout(connect, 3000);
+          };
+
+          this.ws.onerror = (err) => {
+            console.error('❌ Erro de WebSocket:', err);
+          };
+
+          this.ws.onmessage = (event) => {
+            try {
+              const message = JSON.parse(event.data);
+              this.handleWebSocketMessage(message);
+            } catch (err) {
+              console.error('Erro ao processar mensagem WS:', err);
+            }
+          };
+        };
+
+        connect();
+      }
+
+      handleWebSocketMessage(message) {
+        const { event, payload } = message;
+        console.log(`📡 Evento WS: ${event}`, payload);
+
+        if (event === 'file:updated') {
+          Toast.info(`Arquivo atualizado: ${payload.title || payload.slug}`);
+          this.loadInitialGraphData();
+        } else if (event === 'file:created') {
+          Toast.success(`Novo arquivo: ${payload.title || payload.slug}`);
+          this.loadInitialGraphData();
+        } else if (event === 'file:deleted') {
+          Toast.warning(`Arquivo deletado: ${payload.slug}`);
+          this.loadInitialGraphData();
+        } else if (event === 'graph:updated') {
+          this.loadInitialGraphData();
+        }
+      }
+    }
+
+    // ==========================================
+    // INICIALIZAR
+    // ==========================================
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const app = new App();
+      window.app = app;
+      app.start();
+    });
+  </script>
+
 </body>
+
 </html>

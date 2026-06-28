@@ -4,9 +4,9 @@ import { PomodoroService } from '../../services/PomodoroService.js';
 const router = express.Router();
 
 router.post('/start', (req, res) => {
-  const { articleSlug, durationMinutes } = req.body;
+  const { articleSlug, durationMinutes, kanbanCardId } = req.body;
   try {
-    const session = PomodoroService.startSession(articleSlug, durationMinutes);
+    const session = PomodoroService.startSession(articleSlug, durationMinutes, kanbanCardId);
     return res.json(session);
   } catch (err) {
     console.error('Erro ao iniciar Pomodoro:', err);

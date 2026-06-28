@@ -96,6 +96,11 @@ export class FileTree {
                 </select>
               </div>
 
+              <div class="flex flex-col gap-1">
+                <label for="note-new-category" class="text-xs text-textSecondary font-medium">Ou Criar Nova Pasta (opcional)</label>
+                <input type="text" id="note-new-category" placeholder="Ex: devops, design" class="bg-black/30 border border-border rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-accent">
+              </div>
+
               <button type="submit" class="bg-accent hover:bg-accent-hover text-white text-xs font-semibold py-2.5 rounded-xl transition-all mt-2">
                 Criar Nota
               </button>
@@ -154,7 +159,9 @@ export class FileTree {
       
       const title = el('#note-title').value;
       const filename = el('#note-filename').value;
-      const category = el('#note-category').value;
+      const categorySelect = el('#note-category').value;
+      const newCategoryInput = el('#note-new-category').value.trim();
+      const category = newCategoryInput || categorySelect;
       
       try {
         const response = await api.post('/api/articles', {

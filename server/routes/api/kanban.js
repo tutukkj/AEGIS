@@ -3,6 +3,17 @@ import { KanbanService } from '../../services/KanbanService.js';
 
 const router = express.Router();
 
+// Listar todos os cartões (para links)
+router.get('/cards', (req, res) => {
+  try {
+    const cards = KanbanService.getAllCards();
+    return res.json(cards);
+  } catch (err) {
+    console.error('Erro ao listar todos os cartões:', err);
+    return res.status(500).json({ error: 'Erro ao buscar cartões' });
+  }
+});
+
 // Listar quadros
 router.get('/boards', (req, res) => {
   try {
@@ -67,15 +78,18 @@ router.put('/cards/:cardId', (req, res) => {
   }
 });
 
-// Excluir cartão
-router.delete('/cards/:cardId', (req, res) => {
-  const { cardId } = req.params;
+// Criar novo quadro
+router.post('/boards', (req, res) => {
+  const { name, description } = req.body;
+  if (!name) {
+    return res.status(400).json({ error: 'O nome do quadro é obrigatório.' });
+  }
   try {
-    KanbanService.deleteCard(cardId);
-    return res.json({ success: true });
+    const board = KanbanService.createBoard(name, description);
+    return res.json(board);
   } catch (err) {
-    console.error(`Erro ao excluir cartão ${cardId}:`, err);
-    return res.status(500).json({ error: 'Erro ao excluir cartão' });
+    console.error('Erro ao criar quadro Kanban:', err);
+    return res.status(500).json({ error: 'Erro ao criar quadro' });
   }
 });
 

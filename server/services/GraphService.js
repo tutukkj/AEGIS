@@ -10,7 +10,7 @@ export class GraphService {
     
     // Obter todos os artigos que serão os nós do grafo
     const articles = db.prepare(`
-      SELECT id, slug, title, type, status, color, icon 
+      SELECT id, slug, title, type, status, color, icon, roadmap 
       FROM articles
     `).all();
     
@@ -33,7 +33,8 @@ export class GraphService {
         type: art.type,
         status: art.status,
         color: art.color || 'blue',
-        icon: art.icon || 'file-text'
+        icon: art.icon || 'file-text',
+        roadmap: art.roadmap
       }
     }));
 

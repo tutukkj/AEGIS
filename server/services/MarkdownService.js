@@ -156,6 +156,10 @@ export class MarkdownService {
     const article = db.prepare('SELECT * FROM articles WHERE slug = ?').get(slug);
     if (!article) return null;
 
+    // Extrair categoria dinamicamente do file_path
+    const parts = article.file_path.split(/[/\\]/);
+    article.category = parts.length > 1 ? parts[0] : 'Geral';
+
     const fullPath = path.join(PATHS.content, article.file_path);
     if (!fs.existsSync(fullPath)) return null;
 

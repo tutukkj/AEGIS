@@ -7,7 +7,7 @@ export class PomodoroService {
    * @param {number} durationMinutes - Duração em minutos
    * @returns {object} - A sessão criada
    */
-  static startSession(articleSlug = null, durationMinutes = 25) {
+  static startSession(articleSlug = null, durationMinutes = 25, kanbanCardId = null) {
     const db = getDb();
     let articleId = null;
 
@@ -20,15 +20,16 @@ export class PomodoroService {
 
     const startedAt = new Date().toISOString();
     const result = db.prepare(`
-      INSERT INTO pomodoro_sessions (article_id, duration_minutes, interruptions, started_at)
-      VALUES (?, ?, ?, ?)
-    `).run(articleId, durationMinutes, 0, startedAt);
+      INSERT INTO pomodoro_sessions (article_id, duration_minutes, interruptions, started_at, kanban_card_id)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(articleId, durationMinutes, 0, startedAt, kanbanCardId || null);
 
     return {
       sessionId: result.lastInsertRowid,
       articleId,
       durationMinutes,
-      startedAt
+      startedAt,
+      kanbanCardId: kanbanCardId || null
     };
   }
 

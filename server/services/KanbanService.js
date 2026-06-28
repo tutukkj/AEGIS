@@ -43,6 +43,31 @@ export class KanbanService {
   }
 
   /**
+   * Cria um novo quadro Kanban
+   */
+  static createBoard(name, description) {
+    const db = getDb();
+    const defaultColumns = [
+      { id: 'inbox', title: 'Inbox', color: 'text-textSecondary' },
+      { id: 'todo', title: 'A Fazer', color: 'text-accent' },
+      { id: 'doing', title: 'Estudando', color: 'text-warning' },
+      { id: 'review', title: 'Revisão', color: 'text-purple-500' },
+      { id: 'done', title: 'Concluído', color: 'text-success' }
+    ];
+    const result = db.prepare(`
+      INSERT INTO kanban_boards (name, description, columns, sort_order, created_at, updated_at)
+      VALUES (?, ?, ?, 0, ?, ?)
+    `).run(
+      name,
+      description || '',
+      JSON.stringify(defaultColumns),
+      new Date().toISOString(),
+      new Date().toISOString()
+    );
+    return this.getBoard(result.lastInsertRowid);
+  }
+
+  /**
    * Carrega um quadro Kanban com todos os cartões agrupados pelas colunas correspondentes
    */
   static getBoard(id) {
@@ -136,22 +161,22 @@ export class KanbanService {
     }
   }
 
-  /**
-   * Atualiza os detalhes de um cartão
-   */
   static updateCard(cardId, cardData) {
     const db = getDb();
-    const { title, description, tags, dueDate } = cardData;
+    const { title, description, tags, dueDate, columnId, linkedType, linkedId } = cardData;
 
     db.prepare(`
       UPDATE kanban_cards SET 
-        title = ?, description = ?, tags = ?, due_date = ?, updated_at = ?
+        title = ?, description = ?, tags = ?, due_date = ?, column_id = ?, linked_type = ?, linked_id = ?, updated_at = ?
       WHERE id = ?
     `).run(
       title,
       description || '',
       JSON.stringify(tags || []),
       dueDate || null,
+      columnId,
+      linkedType || null,
+      linkedId || null,
       new Date().toISOString(),
       cardId
     );
@@ -163,5 +188,10 @@ export class KanbanService {
   static deleteCard(cardId) {
     const db = getDb();
     db.prepare('DELETE FROM kanban_cards WHERE id = ?').run(cardId);
+  }
+
+  static getAllCards() {
+    const db = getDb();
+    return db.prepare('SELECT id, title, description, column_id FROM kanban_cards').all();
   }
 }

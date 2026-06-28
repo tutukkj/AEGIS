@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS — Learning Operating System</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- Estilos -->
+    <link rel="stylesheet" href="/css/app.css">
+
+    <style>
+        /* ==========================================================================
+       ESTILO AEGIS - TERMINAL/HUD
+       ========================================================================== */
+        :root {
+            --bg: #030303;
+            --fg: #d1d5db;
+            --dim: #2a2a2a;
+            --accent: #5EEAD4;
+            --accent-dim: rgba(94, 234, 212, 0.15);
+            --font-main: 'JetBrains Mono', monospace;
+            --grid-color: rgba(255, 255, 255, 0.02);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg);
+            color: var(--fg);
+            font-family: var(--font-main);
+            font-size: 10px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            overflow: hidden;
+        }
+
+        /* ==========================================================================
+       CAMADAS DE FUNDO
+       ========================================================================== */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: auto;
+        }
+
+        .background-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background:
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            background-size: 100% 3px, 6px 100%;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.25;
+        }
+
+        .vignette-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ==========================================================================
+       SCROLL INDICATOR
+       ========================================================================== */
+        #scroll-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            color: var(--dim);
+            font-size: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s;
+            animation: bounce 2s infinite;
+            pointer-events: auto;
+            font-family: var(--font-main);
+            letter-spacing: 0.15em;
+        }
+
+        #scroll-indicator:hover {
+            color: var(--accent);
+        }
+
+        #scroll-indicator.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+
+            50% {
+                transform: translateX(-50%) translateY(-6px);
+            }
+        }
+
+        /* ==========================================================================
+       NAVBAR (TERMINAL STYLE)
+       ========================================================================== */
+        #navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: rgba(3, 3, 3, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--dim);
+            padding: 8px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.4s ease;
+            pointer-events: auto;
+            font-family: var(--font-main);
+        }
+
+        #navbar.hidden-nav {
+            transform: translateY(-100%);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--fg);
+        }
+
+        .nav-brand .brand-accent {
+            color: var(--accent);
+        }
+
+        .nav-brand .brand-dim {
+            color: var(--dim);
+            font-weight: 100;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 8px;
+            color: var(--dim);
+            letter-spacing: 0.1em;
+        }
+
+        .nav-links a {
+            color: var(--dim);
+            text-decoration: none;
+            transition: color 0.3s;
+            cursor: pointer;
+            padding: 4px 8px;
+            border: 1px solid transparent;
+        }
+
+        .nav-links a:hover {
+            color: var(--fg);
+        }
+
+        .nav-links a.active {
+            color: var(--accent);
+            border-color: var(--dim);
+        }
+
+        .nav-links .sep {
+            color: var(--dim);
+            opacity: 0.3;
+        }
+
+        .nav-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 7px;
+            color: var(--dim);
+            letter-spacing: 0.1em;
+        }
+
+        .nav-status .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.2;
+            }
+        }
+
+        .nav-status .user-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid var(--dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 7px;
+            color: var(--dim);
+            cursor: pointer;
+            transition: all 0.3s;
+            background: transparent;
+            font-family: var(--font-main);
+        }
+
+        .nav-status .user-btn:hover {
+            border-color: var(--fg);
+            color: var(--fg);
+        }
+
+        /* ==========================================================================
+       DASHBOARD - ESTILO TERMINAL (DA IMAGEM)
+       ========================================================================== */
+        #dashboard-content {
+            position: relative;
+            z-index: 10;
+            margin-top: 100vh;
+            min-height: 100vh;
+            padding: 60px 40px 40px;
+            background: rgba(3, 3, 3, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--dim);
+            pointer-events: auto;
+            overflow-y: auto;
+            font-family: var(--font-main);
+        }
+
+        /* Cabeçalho do Dashboard */
+        .dash-header {
+            border-bottom: 1px solid var(--dim);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+
+        .dash-header h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: var(--fg);
+        }
+
+        .dash-header .subtitle {
+            color: var(--dim);
+            font-size: 8px;
+            letter-spacing: 0.2em;
+            margin-top: 4px;
+        }
+
+        /* Layout do Dashboard (estilo HUD) */
+        .dash-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .dash-grid .full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Cards estilo terminal */
+        .term-card {
+            border: 1px solid var(--dim);
+            padding: 18px 20px;
+            background: rgba(0, 0, 0, 0.4);
+            transition: border-color 0.3s;
+        }
+
+        .term-card:hover {
+            border-color: var(--accent);
+        }
+
+        .term-card .card-label {
+            font-size: 7px;
+            color: var(--dim);
+            letter-spacing: 0.15em;
+            margin-bottom: 6px;
+        }
+
+        .term-card .card-value {
+            font-size: 22px;
+            font-weight: 100;
+            color: var(--accent);
+            letter-spacing: 1px;
+        }
+
+        .term-card .card-desc {
+            font-size: 7px;
+            color: var(--dim);
+            letter-spacing: 0.1em;
+            margin-top: 4px;
+        }
+
+        .term-card .progress-bar {
+            margin-top: 10px;
+            width: 100%;
+            height: 2px;
+            background: var(--dim);
+            position: relative;
+        }
+
+        .term-card .progress-bar .fill {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.5s ease;
+        }
+
+        /* Lista de itens estilo terminal */
+        .term-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .term-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--dim);
+            letter-spacing: 0.05em;
+        }
+
+        .term-list li .highlight {
+            color: var(--fg);
+        }
+
+        .term-list li .accent-text {
+            color: var(--accent);
+        }
+
+        /* Seção de arquitetura (da imagem) */
+        .arch-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .arch-section .term-card .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 8px;
+            color: var(--dim);
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.03);
+        }
+
+        .arch-section .term-card .item .num {
+            color: var(--dim);
+            opacity: 0.5;
+        }
+
+        .arch-section .term-card .item .name {
+            color: var(--fg);
+        }
+
+        .arch-section .term-card .item .status {
+            color: var(--accent);
+        }
+
+        /* Checkboxes estilo terminal */
+        .term-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            font-size: 8px;
+            color: var(--dim);
+            cursor: pointer;
+        }
+
+        .term-check input[type="checkbox"] {
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border: 1px solid var(--dim);
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .term-check input[type="checkbox"]:checked {
+            border-color: var(--accent);
+        }
+
+        .term-check input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--accent);
+            font-size: 8px;
+        }
+
+        .term-check .label {
+            color: var(--fg);
+        }
+
+        /* Boot sequence (da imagem) */
+        .boot-sequence {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .boot-sequence .boot-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            font-size: 8px;
+            color: var(--dim);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .boot-sequence .boot-item .num {
+            color: var(--dim);
+            opacity: 0.3;
+            min-width: 16px;
+        }
+
+        .boot-sequence .boot-item .name {
+            color: var(--fg);
+        }
+
+        .boot-sequence .boot-item .status {
+            margin-left: auto;
+            color: var(--accent);
+        }
+
+        /* ==========================================================================
+       PAINEL DE NÓ
+       ========================================================================== */
+        #node-panel {
+            position: fixed;
+            top: 60px;
+            right: -380px;
+            bottom: 60px;
+            width: 340px;
+            background: rgba(3, 3, 3, 0.95);
+            border: 1px solid var(--dim);
+            border-left: 2px solid var(--accent);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            z-index: 200;
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(20px);
+            font-family: var(--font-main);
+        }
+
+        #node-panel.active {
+            right: 20px;
+        }
+
+        #node-panel .node-title {
+            font-size: 14px;
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        #node-panel .node-desc {
+            color: var(--dim);
+            font-size: 8px;
+            line-height: 1.6;
+            border-bottom: 1px dashed var(--dim);
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            text-transform: none;
+            letter-spacing: 0.05em;
+        }
+
+        #node-panel .node-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            letter-spacing: 0.05em;
+        }
+
+        #node-panel .node-row .label {
+            color: var(--dim);
+        }
+
+        #node-panel .node-row .value {
+            color: var(--fg);
+        }
+
+        #node-panel .node-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        #node-panel .node-tags .tag {
+            border: 1px solid var(--dim);
+            padding: 2px 8px;
+            font-size: 7px;
+            color: var(--dim);
+            letter-spacing: 0.05em;
+        }
+
+        #node-panel .btn-action {
+            margin-top: auto;
+            padding: 10px;
+            border: 1px solid var(--accent);
+            background: transparent;
+            color: var(--accent);
+            cursor: pointer;
+            font-family: var(--font-main);
+            font-size: 8px;
+            transition: all 0.3s;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        #node-panel .btn-action:hover {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        #node-panel .btn-close {
+            margin-top: 8px;
+            padding: 8px;
+            border: 1px dashed var(--dim);
+            background: transparent;
+            color: var(--dim);
+            cursor: pointer;
+            font-family: var(--font-main);
+            font-size: 7px;
+            transition: all 0.2s;
+            letter-spacing: 0.1em;
+        }
+
+        #node-panel .btn-close:hover {
+            color: var(--fg);
+            border-color: var(--fg);
+        }
+
+        /* ==========================================================================
+       TOAST
+       ========================================================================== */
+        #toast-container {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            pointer-events: none;
+            align-items: center;
+        }
+
+        .toast {
+            background: rgba(3, 3, 3, 0.92);
+            border: 1px solid var(--dim);
+            padding: 8px 20px;
+            font-size: 8px;
+            font-family: var(--font-main);
+            color: var(--fg);
+            pointer-events: auto;
+            animation: toastIn 0.3s ease;
+            backdrop-filter: blur(10px);
+            letter-spacing: 0.08em;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ==========================================================================
+       RESPONSIVIDADE
+       ========================================================================== */
+        @media (max-width: 768px) {
+            #navbar {
+                padding: 6px 12px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            #dashboard-content {
+                padding: 40px 16px 30px;
+            }
+
+            .dash-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .arch-section {
+                grid-template-columns: 1fr;
+            }
+
+            #node-panel {
+                width: 280px;
+                right: -320px;
+                padding: 16px;
+            }
+
+            #node-panel.active {
+                right: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+
+            .nav-status .dot,
+            .nav-status span {
+                display: none;
+            }
+
+            #node-panel {
+                width: 240px;
+                right: -280px;
+                top: 50px;
+                bottom: 50px;
+            }
+
+            #node-panel.active {
+                right: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ============================================================
+       CAMADAS DE FUNDO
+       ============================================================ -->
+    <div class="background-grid"></div>
+    <div class="crt-overlay"></div>
+    <div class="vignette-overlay"></div>
+
+    <!-- ============================================================
+       MOTOR 3D (SISTEMA SOLAR)
+       ============================================================ -->
+    <div id="webgl-container"></div>
+
+    <!-- ============================================================
+       SCROLL INDICATOR
+       ============================================================ -->
+    <div id="scroll-indicator">
+        SCROLL TO PROCEED<br>▼
+    </div>
+
+    <!-- ============================================================
+       NAVBAR (TERMINAL STYLE)
+       ============================================================ -->
+    <nav id="navbar" class="hidden-nav">
+        <div class="nav-brand">
+            <span class="brand-accent">\\\</span>
+            AEGIS<span class="brand-dim">OS</span>
+        </div>
+
+        <div class="nav-links">
+            <a href="#" class="active" data-page="dashboard">DASHBOARD</a>
+            <span class="sep">|</span>
+            <a href="#" data-page="explorer">EXPLORADOR</a>
+            <span class="sep">|</span>
+            <a href="#" data-page="mindmaps">MAPAS</a>
+            <span class="sep">|</span>
+            <a href="#" data-page="roadmaps">ROADMAPS</a>
+            <span class="sep">|</span>
+            <a href="#" data-page="kanban">KANBAN</a>
+            <span class="sep">|</span>
+            <a href="#" data-page="projects">PROJETOS</a>
+        </div>
+
+        <div class="nav-status">
+            <span class="dot"></span>
+            <span>RECORDING</span>
+            <button class="user-btn" id="userMenuBtn">AD</button>
+        </div>
+    </nav>
+
+    <!-- ============================================================
+       DASHBOARD (ESTILO TERMINAL - DA IMAGEM)
+       ============================================================ -->
+    <div id="dashboard-content">
+
+        <!-- Cabeçalho -->
+        <div class="dash-header">
+            <h1># AEGIS</h1>
+            <div class="subtitle">SYSTEM INTEGRITY CHECK — CONSTELAÇÃO ATIVA</div>
+        </div>
+
+        <!-- Grid Principal -->
+        <div class="dash-grid">
+
+            <!-- Card: System Integrity (da imagem) -->
+            <div class="term-card full-width">
+                <div class="card-label">SYSTEM INTEGRITY CHECK</div>
+                <div
+                    style="color:var(--dim);font-size:8px;line-height:1.8;letter-spacing:0.05em;text-transform:none;margin-top:4px;">
+                    NO SIGNIFICANT DRIFTS IN SQLITE DB PATTERNS RECORDED FOR THE LAST 24 HOURS.
+                </div>
+                <ul class="term-list" style="margin-top:8px;">
+                    <li><span>> PARSING FRONTMATTER...</span><span class="accent-text">DONE</span></li>
+                    <li><span>> BUILDING KNOWLEDGE GRAPH...</span><span class="accent-text">ACTIVE</span></li>
+                    <li><span>> <span id="dash-node-count">42</span> NODES INDEXED.</span><span
+                            class="accent-text">OK</span></li>
+                    <li><span>> STARTING WEBSOCKET SERVER...</span><span class="accent-text">SECURE</span></li>
+                    <li><span>> SQLITE CONNECTION:</span><span class="accent-text">SECURE</span></li>
+                </ul>
+            </div>
+
+            <!-- Coluna Esquerda: Architecture (da imagem) -->
+            <div class="term-card">
+                <div class="card-label">ARCHITECTURE</div>
+                <div class="arch-section" style="grid-template-columns:1fr;gap:4px;margin-top:6px;">
+                    <div class="item"
+                        style="display:flex;justify-content:space-between;padding:4px 0;font-size:8px;color:var(--dim);border-bottom:1px dashed rgba(255,255,255,0.03);">
+                        <span class="num">01</span>
+                        <span class="name">MARKDOWN SERVICE</span>
+                        <span class="status">[+]</span>
+                    </div>
+                    <div class="item"
+                        style="display:flex;justify-content:space-between;padding:4px 0;font-size:8px;color:var(--dim);border-bottom:1px dashed rgba(255,255,255,0.03);">
+                        <span class="num">02</span>
+                        <span class="name">GRAPH VISUALIZER</span>
+                        <span class="status">[+]</span>
+                    </div>
+                    <div class="item"
+                        style="display:flex;justify-content:space-between;padding:4px 0;font-size:8px;color:var(--dim);border-bottom:1px dashed rgba(255,255,255,0.03);">
+                        <span class="num">03</span>
+                        <span class="name">KANBAN SYSTEM</span>
+                        <span class="status">[+]</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna Direita: Boot Sequence (da imagem) -->
+            <div class="term-card">
+                <div class="card-label">INITIALIZE BOOT SEQUENCE</div>
+                <div class="boot-sequence" style="margin-top:6px;">
+                    <label class="term-check">
+                        <input type="checkbox" checked>
+                        <span class="label">01 &nbsp; LOAD MODULES</span>
+                    </label>
+                    <label class="term-check">
+                        <input type="checkbox" checked>
+                        <span class="label">02 &nbsp; INIT GRAPH</span>
+                    </label>
+                    <label class="term-check">
+                        <input type="checkbox">
+                        <span class="label">03 &nbsp; START WEBSOCKET</span>
+                    </label>
+                </div>
+                <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.03);">
+                    <div class="item"
+                        style="display:flex;justify-content:space-between;font-size:7px;color:var(--dim);">
+                        <span>INSTALLED BOOT SEQUENCE</span>
+                        <span class="accent-text">v2.0.0</span>
+                    </div>
+                    <div class="item"
+                        style="display:flex;justify-content:space-between;font-size:7px;color:var(--dim);">
+                        <span>127.0.0.1:3000</span>
+                        <span class="accent-text">ONLINE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Graph Energy (da imagem) -->
+            <div class="term-card full-width">
+                <div class="card-label">GRAPH ENERGY FLUX</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:8px;">
+                    <div>
+                        <div style="font-size:7px;color:var(--dim);letter-spacing:0.1em;">LOCAL DB</div>
+                        <div style="font-size:12px;color:var(--accent);">SYNCED 100%</div>
+                    </div>
+                    <div>
+                        <div style="font-size:7px;color:var(--dim);letter-spacing:0.1em;">MEM ALLOCATED</div>
+                        <div style="font-size:12px;color:var(--accent);">1024MB</div>
+                    </div>
+                    <div>
+                        <div style="font-size:7px;color:var(--dim);letter-spacing:0.1em;">STATUS</div>
+                        <div style="font-size:12px;color:var(--accent);">RECORDING</div>
+                    </div>
+                </div>
+                <div class="progress-bar" style="margin-top:12px;">
+                    <div class="fill" style="width:100%"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Área de Conteúdo Dinâmico (para outras páginas) -->
+        <div id="main-content" class="mt-6"></div>
+
+    </div>
+
+    <!-- ============================================================
+       PAINEL DE NÓ
+       ============================================================ -->
+    <div id="node-panel">
+        <div class="node-title" id="p-title">NODE_NAME</div>
+        <div class="node-desc" id="p-desc">Descrição do arquivo carregada do frontmatter markdown.</div>
+
+        <div class="node-row">
+            <span class="label">STATUS</span>
+            <span class="value" id="p-status">EM PROGRESSO</span>
+        </div>
+        <div class="node-row">
+            <span class="label">DIFICULDADE</span>
+            <span class="value" id="p-diff">INTERMEDIÁRIO</span>
+        </div>
+        <div class="node-row">
+            <span class="label">ROADMAP</span>
+            <span class="value" id="p-roadmap">GERAL</span>
+        </div>
+        <div class="node-row">
+            <span class="label">TEMPO ESTIMADO</span>
+            <span class="value" id="p-time">N/A</span>
+        </div>
+
+        <div class="node-tags" id="p-tags"></div>
+
+        <button class="btn-action" id="p-open-editor">> ABRIR NOTA</button>
+        <button class="btn-close" id="p-close">← FECHAR</button>
+    </div>
+
+    <!-- ============================================================
+       TOAST CONTAINER
+       ============================================================ -->
+    <div id="toast-container"></div>
+
+    <!-- ============================================================
+       BIBLIOTECAS
+       ============================================================ -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.8.0/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose',
+            themeVariables: {
+                background: '#030303',
+                primaryColor: '#5EEAD4',
+                primaryTextColor: '#d1d5db',
+                lineColor: '#2a2a2a'
+            }
+        });
+    </script>
+
+    <!-- ============================================================
+       SISTEMA SOLAR 3D + LÓGICA
+       ============================================================ -->
+    <script>
+        // ==========================================
+        // 1. DADOS DO SISTEMA SOLAR
+        // ==========================================
+        const solarData = {
+            // SOL CENTRAL (NÚCLEO DO CONHECIMENTO)
+            core: {
+                id: 'aegis',
+                name: 'AEGIS CORE',
+                description: 'Sistema Operacional de Aprendizado',
+                color: 0x5EEAD4,
+                radius: 1.8,
+                glowColor: 0x5EEAD4
+            },
+            // PLANETAS (PASTAS/MÓDULOS)
+            planets: [{
+                id: 'backend',
+                name: 'BACKEND',
+                description: 'Desenvolvimento de APIs e infraestrutura',
+                color: 0x5EEAD4,
+                orbitRadius: 4.5,
+                orbitSpeed: 0.3,
+                radius: 0.7,
+                items: [
+                    { id: 'python', name: 'PYTHON.md', desc: 'Linguagem base' },
+                    { id: 'fastapi', name: 'FASTAPI.md', desc: 'Framework web' },
+                    { id: 'docker', name: 'DOCKER.md', desc: 'Containerização' },
+                    { id: 'linux', name: 'LINUX.md', desc: 'Sistema operacional' }
+                ]
+            }, {
+                id: 'ai',
+                name: 'IA ENGENHARIA',
+                description: 'Modelos de linguagem e agentes',
+                color: 0xF472B6,
+                orbitRadius: 6.5,
+                orbitSpeed: 0.2,
+                radius: 0.7,
+                items: [
+                    { id: 'llm', name: 'LLM.md', desc: 'Large Language Models' },
+                    { id: 'rag', name: 'RAG.md', desc: 'Retrieval-Augmented Gen' },
+                    { id: 'agents', name: 'AGENTS.md', desc: 'Sistemas autônomos' }
+                ]
+            }, {
+                id: 'math',
+                name: 'MATEMÁTICA',
+                description: 'Fundamentos para IA e dados',
+                color: 0xFBBF24,
+                orbitRadius: 8.5,
+                orbitSpeed: 0.15,
+                radius: 0.6,
+                items: [
+                    { id: 'linear', name: 'ALGEBRA.md', desc: 'Vetores e matrizes' },
+                    { id: 'calculus', name: 'CALCULO.md', desc: 'Diferencial e integral' }
+                ]
+            }, {
+                id: 'frontend',
+                name: 'FRONTEND',
+                description: 'Interfaces e experiência do usuário',
+                color: 0x60A5FA,
+                orbitRadius: 10.5,
+                orbitSpeed: 0.12,
+                radius: 0.6,
+                items: [
+                    { id: 'react', name: 'REACT.md', desc: 'Biblioteca de interfaces' },
+                    { id: 'tailwind', name: 'TAILWIND.md', desc: 'Framework CSS' }
+                ]
+            }, {
+                id: 'devops',
+                name: 'DEVOPS',
+                description: 'Infraestrutura e automação',
+                color: 0x34D399,
+                orbitRadius: 12.5,
+                orbitSpeed: 0.1,
+                radius: 0.5,
+                items: [
+                    { id: 'k8s', name: 'KUBERNETES.md', desc: 'Orquestração' },
+                    { id: 'terraform', name: 'TERRAFORM.md', desc: 'Infra como código' }
+                ]
+            }]
+        };
+
+        // ==========================================
+        // 2. SETUP THREE.JS
+        // ==========================================
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030303, 0.01);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const defaultCamPos = { x: 0, y: 6, z: 22 };
+        camera.position.set(defaultCamPos.x, defaultCamPos.y, defaultCamPos.z);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x030303, 0);
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.3;
+        controls.enableZoom = false;
+        controls.maxPolarAngle = Math.PI / 2.1;
+        controls.minPolarAngle = 0.1;
+        controls.target.set(0, 0, 0);
+
+        // ==========================================
+        // 3. FUNDO ESPACIAL
+        // ==========================================
+        // Estrelas
+        const starsGeo = new THREE.BufferGeometry();
+        const starsCount = 2000;
+        const starsPos = new Float32Array(starsCount * 3);
+        const starsCol = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount * 3; i += 3) {
+            const r = 30 + Math.random() * 70;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            starsPos[i] = r * Math.sin(phi) * Math.cos(theta);
+            starsPos[i + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.5;
+            starsPos[i + 2] = r * Math.cos(phi);
+            const b = 0.2 + Math.random() * 0.8;
+            starsCol[i] = b * 0.9;
+            starsCol[i + 1] = b * 0.9;
+            starsCol[i + 2] = b;
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+        starsGeo.setAttribute('color', new THREE.BufferAttribute(starsCol, 3));
+        const starsMat = new THREE.PointsMaterial({
+            size: 0.04, vertexColors: true, transparent: true, opacity: 0.7,
+            sizeAttenuation: true
+        });
+        const starsMesh = new THREE.Points(starsGeo, starsMat);
+        scene.add(starsMesh);
+
+        // ==========================================
+        // 4. SOL CENTRAL
+        // ==========================================
+        const coreGroup = new THREE.Group();
+        scene.add(coreGroup);
+
+        // Núcleo do Sol
+        const coreMat = new THREE.MeshBasicMaterial({
+            color: 0x5EEAD4,
+            transparent: true,
+            opacity: 0.9
+        });
+        const core = new THREE.Mesh(new THREE.SphereGeometry(1.2, 32, 32), coreMat);
+        coreGroup.add(core);
+
+        // Anel wireframe do Sol
+        const wireMat = new THREE.MeshBasicMaterial({
+            color: 0x5EEAD4,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.3
+        });
+        const wire = new THREE.Mesh(new THREE.SphereGeometry(1.8, 24, 24), wireMat);
+        coreGroup.add(wire);
+
+        // Anel externo (órbita)
+        const ringGeo = new THREE.TorusGeometry(2.5, 0.02, 16, 80);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x5EEAD4, transparent: true, opacity: 0.2 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        coreGroup.add(ring);
+
+        // Anel inclinado
+        const ring2 = new THREE.Mesh(
+            new THREE.TorusGeometry(3.0, 0.015, 16, 80),
+            new THREE.MeshBasicMaterial({ color: 0x5EEAD4, transparent: true, opacity: 0.15 })
+        );
+        ring2.rotation.x = Math.PI / 3;
+        ring2.rotation.z = 0.5;
+        coreGroup.add(ring2);
+
+        // Glow particles
+        const glowCount = 200;
+        const glowGeo = new THREE.BufferGeometry();
+        const glowPos = new Float32Array(glowCount * 3);
+        for (let i = 0; i < glowCount * 3; i += 3) {
+            const r = 1.5 + Math.random() * 2.5;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            glowPos[i] = r * Math.sin(phi) * Math.cos(theta);
+            glowPos[i + 1] = r * Math.sin(phi) * Math.sin(theta);
+            glowPos[i + 2] = r * Math.cos(phi);
+        }
+        glowGeo.setAttribute('position', new THREE.BufferAttribute(glowPos, 3));
+        const glowMat = new THREE.PointsMaterial({
+            color: 0x5EEAD4,
+            size: 0.04,
+            transparent: true,
+            opacity: 0.3,
+            blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
+        });
+        const glow = new THREE.Points(glowGeo, glowMat);
+        coreGroup.add(glow);
+
+        // Label do Sol
+        const coreLabel = createTerminalLabel('AEGIS CORE', true);
+        coreLabel.position.y = 3.5;
+        coreGroup.add(coreLabel);
+
+        // Salvar dados do Sol
+        coreGroup.userData = {
+            id: 'aegis',
+            name: 'AEGIS CORE',
+            description: 'Sistema Operacional de Aprendizado',
+            isCore: true,
+            color: 0x5EEAD4
+        };
+
+        // ==========================================
+        // 5. PLANETAS (PASTAS)
+        // ==========================================
+        const planetMeshes = [];
+        const meshDataMap = new Map();
+
+        solarData.planets.forEach((planet, pIndex) => {
+            const planetGroup = new THREE.Group();
+
+            // Posição inicial
+            const angle = (pIndex / solarData.planets.length) * Math.PI * 2;
+            planetGroup.position.set(
+                planet.orbitRadius * Math.cos(angle),
+                (Math.random() - 0.5) * 1.0,
+                planet.orbitRadius * Math.sin(angle)
+            );
+
+            // Núcleo do planeta
+            const pCoreMat = new THREE.MeshBasicMaterial({
+                color: planet.color,
+                transparent: true,
+                opacity: 0.8
+            });
+            const pCore = new THREE.Mesh(new THREE.SphereGeometry(planet.radius * 0.5, 16, 16), pCoreMat);
+            planetGroup.add(pCore);
+
+            // Anel wireframe
+            const pWireMat = new THREE.MeshBasicMaterial({
+                color: planet.color,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.25
+            });
+            const pWire = new THREE.Mesh(new THREE.SphereGeometry(planet.radius, 12, 12), pWireMat);
+            planetGroup.add(pWire);
+
+            // Anel orbital ao redor do planeta
+            const pRingGeo = new THREE.TorusGeometry(planet.radius * 1.6, 0.015, 8, 30);
+            const pRingMat = new THREE.MeshBasicMaterial({ color: planet.color, transparent: true, opacity: 0.2 });
+            const pRing = new THREE.Mesh(pRingGeo, pRingMat);
+            pRing.rotation.x = Math.PI / 2;
+            pRing.rotation.z = 0.3;
+            planetGroup.add(pRing);
+
+            // Label do planeta
+            const pLabel = createTerminalLabel(planet.name, false);
+            pLabel.position.y = planet.radius * 2 + 0.5;
+            planetGroup.add(pLabel);
+
+            // Salvar dados
+            planetGroup.userData = {
+                id: planet.id,
+                name: planet.name,
+                description: planet.description,
+                isPlanet: true,
+                color: planet.color,
+                items: planet.items,
+                orbitRadius: planet.orbitRadius,
+                orbitSpeed: planet.orbitSpeed,
+                pivot: null
+            };
+
+            // Criar órbita visível
+            const orbitPoints = [];
+            for (let i = 0; i <= 64; i++) {
+                const a = (i / 64) * Math.PI * 2;
+                orbitPoints.push(new THREE.Vector3(
+                    planet.orbitRadius * Math.cos(a),
+                    0,
+                    planet.orbitRadius * Math.sin(a)
+                ));
+            }
+            const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+            const orbitMat = new THREE.LineBasicMaterial({
+                color: planet.color,
+                transparent: true,
+                opacity: 0.08
+            });
+            const orbitLine = new THREE.Line(orbitGeo, orbitMat);
+            coreGroup.add(orbitLine);
+
+            // Pivot para rotação orbital
+            const pivot = new THREE.Group();
+            pivot.position.set(0, 0, 0);
+            pivot.add(planetGroup);
+            coreGroup.add(pivot);
+
+            planetGroup.userData.pivot = pivot;
+
+            // Salvar referências
+            planetMeshes.push(pCore);
+            meshDataMap.set(pCore, planetGroup.userData);
+        });
+
+        // ==========================================
+        // 6. HELPERS
+        // ==========================================
+        function createTerminalLabel(text, isCore) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Glow
+            ctx.shadowColor = 'rgba(94, 234, 212, 0.15)';
+            ctx.shadowBlur = 20;
+
+            ctx.font = isCore ? 'bold 40px "JetBrains Mono", monospace' : '28px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = isCore ? '#5EEAD4' : '#d1d5db';
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2 - 5);
+
+            if (isCore) {
+                ctx.shadowBlur = 0;
+                ctx.font = '12px "JetBrains Mono", monospace';
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillText('◈ SYSTEM CORE', canvas.width / 2, canvas.height / 2 + 40);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            const material = new THREE.SpriteMaterial({
+                map: texture,
+                transparent: true,
+                depthTest: false,
+                opacity: 0.9
+            });
+            const sprite = new THREE.Sprite(material);
+            const scale = isCore ? 3.5 : 2.5;
+            sprite.scale.set(scale, scale * 0.25, 1);
+            return sprite;
+        }
+
+        // ==========================================
+        // 7. INTERAÇÃO
+        // ==========================================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let hoveredMesh = null;
+        let selectedData = null;
+        const nodePanel = document.getElementById('node-panel');
+
+        renderer.domElement.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            const allTargets = [core, ...planetMeshes];
+            const intersects = raycaster.intersectObjects(allTargets);
+
+            if (intersects.length > 0) {
+                const mesh = intersects[0].object;
+                const data = meshDataMap.get(mesh) || coreGroup.userData;
+                if (data) {
+                    renderer.domElement.style.cursor = 'pointer';
+                    if (hoveredMesh !== mesh) {
+                        if (hoveredMesh) {
+                            hoveredMesh.material.opacity = 0.7;
+                            hoveredMesh.scale.set(1, 1, 1);
+                        }
+                        hoveredMesh = mesh;
+                        mesh.material.opacity = 1;
+                        mesh.scale.set(1.3, 1.3, 1.3);
+                    }
+                    return;
+                }
+            }
+
+            renderer.domElement.style.cursor = 'default';
+            if (hoveredMesh) {
+                hoveredMesh.material.opacity = 0.7;
+                hoveredMesh.scale.set(1, 1, 1);
+                hoveredMesh = null;
+            }
+        });
+
+        renderer.domElement.addEventListener('click', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            const allTargets = [core, ...planetMeshes];
+            const intersects = raycaster.intersectObjects(allTargets);
+
+            if (intersects.length > 0) {
+                const mesh = intersects[0].object;
+                const data = meshDataMap.get(mesh) || coreGroup.userData;
+                if (data) {
+                    selectNode(data);
+                }
+            }
+        });
+
+        function selectNode(data) {
+            selectedData = data;
+
+            const isCore = data.isCore || false;
+            const title = isCore ? '☀ AEGIS CORE' : data.name;
+            const desc = data.description || (isCore ? 'Sistema Operacional de Aprendizado' : 'Módulo de conhecimento');
+
+            document.getElementById('p-title').textContent = title;
+            document.getElementById('p-desc').textContent = desc;
+
+            if (!isCore && data.items) {
+                document.getElementById('p-status').textContent = `${data.items.length} ITENS`;
+                document.getElementById('p-diff').textContent = 'MÓDULO';
+                document.getElementById('p-time').textContent = 'N/A';
+                document.getElementById('p-roadmap').textContent = 'PASTA';
+            } else if (isCore) {
+                document.getElementById('p-status').textContent = 'SYSTEM CORE';
+                document.getElementById('p-diff').textContent = 'ACTIVE';
+                document.getElementById('p-time').textContent = 'ONLINE';
+                document.getElementById('p-roadmap').textContent = 'AEGIS OS';
+            }
+
+            const tagsContainer = document.getElementById('p-tags');
+            tagsContainer.innerHTML = '';
+            if (!isCore && data.items) {
+                data.items.forEach(item => {
+                    const el = document.createElement('span');
+                    el.className = 'tag';
+                    el.textContent = `#${item.id}`;
+                    tagsContainer.appendChild(el);
+                });
+            } else {
+                const el = document.createElement('span');
+                el.className = 'tag';
+                el.textContent = '#system';
+                tagsContainer.appendChild(el);
+                const el2 = document.createElement('span');
+                el2.className = 'tag';
+                el2.textContent = '#core';
+                tagsContainer.appendChild(el2);
+            }
+
+            nodePanel.classList.add('active');
+        }
+
+        document.getElementById('p-close').addEventListener('click', () => {
+            nodePanel.classList.remove('active');
+            selectedData = null;
+        });
+
+        document.getElementById('p-open-editor').addEventListener('click', () => {
+            if (selectedData && !selectedData.isCore && selectedData.items) {
+                // Abrir explorador com filtro da pasta
+                window.location.hash = `#explorer/${selectedData.id}`;
+                nodePanel.classList.remove('active');
+            } else if (selectedData && selectedData.isCore) {
+                window.location.hash = '#dashboard';
+                nodePanel.classList.remove('active');
+            }
+        });
+
+        // ==========================================
+        // 8. SCROLL PARA DASHBOARD
+        // ==========================================
+        const dashboard = document.getElementById('dashboard-content');
+        const scrollIndicator = document.getElementById('scroll-indicator');
+        const navbar = document.getElementById('navbar');
+        let isDashboardVisible = false;
+
+        document.addEventListener('wheel', (e) => {
+            if (e.deltaY > 0 && !isDashboardVisible) {
+                // Scroll para baixo - vai para o dashboard
+                isDashboardVisible = true;
+                scrollIndicator.classList.add('hidden');
+                navbar.classList.remove('hidden-nav');
+                controls.autoRotate = false;
+                controls.enableZoom = true;
+
+                new TWEEN.Tween(camera.position)
+                    .to({ x: 0, y: 14, z: 10 }, 1200)
+                    .easing(TWEEN.Easing.Cubic.InOut)
+                    .start();
+
+                new TWEEN.Tween(controls.target)
+                    .to({ x: 0, y: 0, z: 0 }, 1200)
+                    .easing(TWEEN.Easing.Cubic.InOut)
+                    .start();
+
+                // Scroll suave para o dashboard
+                window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+
+            } else if (e.deltaY < 0 && isDashboardVisible && window.scrollY < 100) {
+                // Scroll para cima - volta para o sistema solar
+                isDashboardVisible = false;
+                scrollIndicator.classList.remove('hidden');
+                navbar.classList.add('hidden-nav');
+                controls.autoRotate = true;
+                controls.enableZoom = false;
+
+                new TWEEN.Tween(camera.position)
+                    .to({ x: defaultCamPos.x, y: defaultCamPos.y, z: defaultCamPos.z }, 1200)
+                    .easing(TWEEN.Easing.Cubic.InOut)
+                    .start();
+
+                new TWEEN.Tween(controls.target)
+                    .to({ x: 0, y: 0, z: 0 }, 1200)
+                    .easing(TWEEN.Easing.Cubic.InOut)
+                    .start();
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }, { passive: true });
+
+        // ==========================================
+        // 9. NAVEGAÇÃO NAVBAR
+        // ==========================================
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.getAttribute('data-page');
+
+                document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                // Se não estiver no dashboard, ir para ele
+                if (!isDashboardVisible) {
+                    isDashboardVisible = true;
+                    scrollIndicator.classList.add('hidden');
+                    controls.autoRotate = false;
+                    controls.enableZoom = true;
+                    window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+                }
+
+                loadPage(page);
+            });
+        });
+
+        function loadPage(page) {
+            const content = document.getElementById('main-content');
+
+            const pages = {
+                dashboard: `
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:8px;">
+              <div class="term-card">
+                <div class="card-label">TOTAL DE NOTAS</div>
+                <div class="card-value" id="dash-total-notes">42</div>
+                <div class="card-desc">ARQUIVOS .MD INDEXADOS</div>
+                <div class="progress-bar"><div class="fill" style="width:100%"></div></div>
+              </div>
+              <div class="term-card">
+                <div class="card-label">PROGRESSO GERAL</div>
+                <div class="card-value">68%</div>
+                <div class="card-desc">NOTAS CONCLUÍDAS</div>
+                <div class="progress-bar"><div class="fill" style="width:68%"></div></div>
+              </div>
+              <div class="term-card">
+                <div class="card-label">POMODOROS</div>
+                <div class="card-value">124</div>
+                <div class="card-desc">SESSÕES DE FOCO</div>
+                <div class="progress-bar"><div class="fill" style="width:75%"></div></div>
+              </div>
+            </div>
+          `,
+                explorer: `
+            <div style="margin-top:12px;">
+              <h2 style="font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:12px;">✦ EXPLORADOR</h2>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                ${solarData.planets.map(p => `
+                  <div class="term-card" style="cursor:pointer;border-color:var(--dim);" onclick="window.location.hash='#explorer/${p.id}'">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span style="color:#${p.color.toString(16).padStart(6, '0')};font-size:16px;">◈</span>
+                      <div>
+                        <div style="font-size:9px;font-weight:700;color:var(--fg);">${p.name}</div>
+                        <div style="font-size:7px;color:var(--dim);">${p.items.length} arquivos</div>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `,
+                mindmaps: `
+            <div style="margin-top:12px;border:1px solid var(--dim);padding:24px;text-align:center;">
+              <div style="font-size:32px;color:var(--dim);margin-bottom:12px;">◈</div>
+              <h2 style="font-size:11px;font-weight:700;letter-spacing:1px;">MAPAS MENTAIS</h2>
+              <p style="font-size:8px;color:var(--dim);margin:8px 0;">FLUXOGRAMAS E DIAGRAMAS</p>
+              <button class="btn-action" style="margin:0 auto;display:inline-block;padding:8px 24px;font-size:8px;" onclick="window.location.hash='#mindmaps/new'">
+                + NOVO MAPA
+              </button>
+            </div>
+          `,
+                roadmaps: `
+            <div style="margin-top:12px;">
+              <h2 style="font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:12px;">✦ ROADMAPS</h2>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                ${solarData.planets.map(p => `
+                  <div class="term-card" style="cursor:pointer;" onclick="window.location.hash='#roadmaps/${p.id}'">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                      <span style="font-size:9px;font-weight:700;color:var(--fg);">${p.name}</span>
+                      <span style="font-size:7px;color:var(--dim);">${p.items.length} tópicos</span>
+                    </div>
+                    <div class="progress-bar" style="margin-top:6px;"><div class="fill" style="width:${Math.floor(Math.random() * 50 + 20)}%"></div></div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `,
+                kanban: `
+            <div style="margin-top:12px;">
+              <h2 style="font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:12px;">✦ KANBAN</h2>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                ${['A FAZER', 'FAZENDO', 'CONCLUÍDO'].map(col => `
+                  <div class="term-card" style="min-height:120px;">
+                    <div style="font-size:8px;font-weight:700;color:var(--dim);margin-bottom:8px;">${col}</div>
+                    <div style="font-size:7px;color:var(--dim);text-align:center;padding:20px 0;">ARRASTE ITENS</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `,
+                projects: `
+            <div style="margin-top:12px;">
+              <h2 style="font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:12px;">✦ PROJETOS</h2>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                ${solarData.planets.slice(0, 2).map(p => `
+                  <div class="term-card">
+                    <div style="font-size:9px;font-weight:700;color:var(--fg);">${p.name}</div>
+                    <div style="font-size:7px;color:var(--dim);">${p.description}</div>
+                    <div style="display:flex;gap:6px;margin-top:6px;">
+                      <span style="font-size:7px;border:1px solid var(--dim);padding:1px 6px;color:var(--dim);">${p.items.length} tarefas</span>
+                      <span style="font-size:7px;border:1px solid var(--accent);padding:1px 6px;color:var(--accent);">ATIVO</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `
+            };
+
+            content.innerHTML = pages[page] || pages.dashboard;
+        }
+
+        // ==========================================
+        // 10. ANIMAÇÃO
+        // ==========================================
+        function animate(time) {
+            requestAnimationFrame(animate);
+            TWEEN.update(time);
+            controls.update();
+
+            // Rotação do Sol
+            core.rotation.x += 0.005;
+            core.rotation.y += 0.008;
+            wire.rotation.x += 0.003;
+            wire.rotation.y += 0.005;
+            ring.rotation.z += 0.002;
+            ring2.rotation.z -= 0.003;
+
+            // Rotação dos planetas
+            coreGroup.children.forEach(child => {
+                if (child.type === 'Group' && child.userData && child.userData.pivot) {
+                    const data = child.userData;
+                    const pivot = data.pivot;
+                    const speed = data.orbitSpeed || 0.2;
+                    pivot.rotation.y += 0.005 * speed;
+                }
+            });
+
+            // Rotação das estrelas
+            starsMesh.rotation.y += 0.0001;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // ==========================================
+        // 11. RESIZE
+        // ==========================================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ==========================================
+        // 12. TOAST
+        // ==========================================
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        setTimeout(() => showToast('✦ AEGIS ONLINE · CONSTELAÇÃO CARREGADA'), 800);
+
+        // ==========================================
+        // 13. EXPOR PARA OS COMPONENTES
+        // ==========================================
+        window.solarData = solarData;
+        window.coreGroup = coreGroup;
+        window.showToast = showToast;
+        window.scene = scene;
+        window.camera = camera;
+        window.controls = controls;
+    </script>
+
+</body>
+
+</html>
