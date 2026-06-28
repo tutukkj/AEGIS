@@ -1,0 +1,52 @@
+{
+  "slug": "backend",
+  "name": "Desenvolvedor Backend",
+  "description": "Trilha completa para se tornar um desenvolvedor backend moderno em Python e DevOps.",
+  "color": "blue",
+  "icon": "server",
+  "nodes": [
+    {
+      "id": "linux",
+      "title": "Linux & Terminal",
+      "parent": null,
+      "article_slug": "linux",
+      "checklist": [
+        { "text": "Domínio de comandos básicos", "done": true },
+        { "text": "Manipulação de permissões", "done": false },
+        { "text": "Criação de shell scripts simples", "done": false }
+      ]
+    },
+    {
+      "id": "python",
+      "title": "Linguagem Python",
+      "parent": "linux",
+      "article_slug": "python",
+      "checklist": [
+        { "text": "Tipos primitivos e listas", "done": true },
+        { "text": "Programação orientada a objetos", "done": true },
+        { "text": "Uso de decoradores", "done": false }
+      ]
+    },
+    {
+      "id": "docker",
+      "title": "Docker Containers",
+      "parent": "linux",
+      "article_slug": "docker",
+      "checklist": [
+        { "text": "Escrita de Dockerfiles", "done": false },
+        { "text": "Montagem de Docker Compose", "done": false }
+      ]
+    },
+    {
+      "id": "fastapi",
+      "title": "FastAPI Web APIs",
+      "parent": "python",
+      "article_slug": "fastapi",
+      "checklist": [
+        { "text": "Criação de endpoints básicos", "done": false },
+        { "text": "Validação com Pydantic", "done": false },
+        { "text": "Uso de dependências (Depends)", "done": false }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS // Learning OS</title>
+    
+    <!-- Fontes e Dependências -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        /* ==========================================================================
+           1. VARIÁVEIS E RESET MESTRE
+           ========================================================================== */
+        :root {
+            --bg: #030303;
+            --fg: #d1d5db;
+            --dim: #333333;
+            --accent: #ffffff;
+            --font-main: 'JetBrains Mono', monospace;
+            --grid-color: rgba(255, 255, 255, 0.03);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body, html {
+            width: 100%;
+            background-color: var(--bg);
+            color: var(--fg);
+            font-family: var(--font-main);
+            font-size: 10px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+        
+        /* Oculta scrollbar mas permite rolagem para imersão */
+        body::-webkit-scrollbar { display: none; }
+
+        /* ==========================================================================
+           2. CAMADAS DE FUNDO (FIXAS)
+           ========================================================================== */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 1; pointer-events: auto; /* Fundamental para o Raycaster do 3D funcionar */
+        }
+
+        .background-grid {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px; z-index: 0; pointer-events: none;
+        }
+
+        .crt-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 3px, 6px 100%;
+            z-index: 9999; pointer-events: none; opacity: 0.25;
+        }
+
+        /* ==========================================================================
+           3. CAMADA DE CONTEÚDO HTML (ROLÁVEL)
+           ========================================================================== */
+        #scroll-layer {
+            position: relative; z-index: 10; width: 100%;
+            pointer-events: none; /* Deixa o clique vazar para o fundo 3D */
+        }
+
+        .interactive { pointer-events: auto; } /* Aplica auto só no que for clicável */
+
+        section { width: 100vw; min-height: 100vh; position: relative; }
+
+        /* ==========================================================================
+           4. SEÇÃO 1: HERO (HUD Sci-Fi)
+           ========================================================================== */
+        #hero-section {
+            display: flex; justify-content: space-between; padding: 80px 20px 20px 20px;
+        }
+
+        /* Headers/Footers fixos sobre tudo */
+        .fixed-header {
+            position: fixed; top: 20px; left: 20px; right: 20px;
+            display: flex; justify-content: space-between; z-index: 100; pointer-events: none;
+        }
+        .header-left { font-size: 14px; font-weight: bold; letter-spacing: 2px;}
+        .header-left span { color: #666; font-weight: 100;}
+        .header-right { display: flex; gap: 20px; color: #888; font-size: 9px; pointer-events: auto;}
+        .header-right span:hover { color: var(--fg); cursor: pointer; }
+
+        .fixed-footer {
+            position: fixed; bottom: 20px; left: 20px; right: 20px;
+            display: flex; gap: 40px; font-size: 9px; color: #555; z-index: 100; pointer-events: none;
+        }
+        .blinking { animation: blink 1s infinite step-end; color: var(--fg); }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Painéis Laterais */
+        .left-panel, .right-panel {
+            display: flex; flex-direction: column; width: 320px; gap: 20px;
+        }
+
+        .hud-box {
+            border: 1px solid var(--dim); padding: 15px;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            color: #888; font-size: 9px; line-height: 1.6;
+        }
+        .hud-box .highlight { color: var(--fg); font-weight: bold;}
+        
+        .coords { margin-top: 25vh; border-left: 2px solid var(--fg); padding-left: 10px; color: #888; font-size: 9px; }
+        
+        .ascii-box {
+            border: 1px solid var(--dim); height: 120px; display: flex; align-items: center; justify-content: center;
+            font-size: 6px; line-height: 6px; color: #666; overflow: hidden; background: #050505;
+        }
+
+        .accordion { border-top: 1px solid var(--dim); padding-top: 10px;}
+        .accordion-header { display: flex; justify-content: space-between; background: var(--fg); color: var(--bg); padding: 5px 10px; font-weight: bold; margin-bottom: 10px;}
+        .accordion-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed var(--dim); color: #888;}
+        
+        .btn-boot {
+            margin-top: 10px; padding: 15px; background: transparent; border: 1px solid var(--fg);
+            color: var(--fg); font-family: inherit; font-size: 10px; cursor: pointer; transition: all 0.3s;
+        }
+        .btn-boot:hover { background: var(--fg); color: var(--bg); }
+
+        .scroll-indicator {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            color: #444; font-size: 8px; text-align: center; cursor: pointer; transition: 0.3s;
+        }
+        .scroll-indicator:hover { color: var(--fg); }
+
+        /* ==========================================================================
+           5. SEÇÃO 2: CARDS DE EXPLICAÇÃO
+           ========================================================================== */
+        .content-section {
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+            padding: 100px 5%; min-height: 100vh;
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 20%, rgba(0,0,0,0.85) 80%, rgba(0,0,0,0) 100%);
+        }
+
+        .cards-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px; width: 100%; max-width: 1100px;
+        }
+
+        .info-card {
+            background: rgba(5, 5, 5, 0.9); border: 1px solid var(--dim);
+            padding: 30px; transition: transform 0.3s, border-color 0.3s;
+        }
+        .info-card:hover { transform: translateY(-5px); border-color: var(--fg); }
+        .info-card h3 { color: var(--fg); font-size: 14px; margin-bottom: 15px; border-bottom: 1px dashed var(--dim); padding-bottom: 10px;}
+        .info-card p { color: #888; line-height: 1.6; font-size: 10px; margin-bottom: 10px; text-transform: none;}
+        .info-card .tag { display: inline-block; padding: 2px 6px; border: 1px solid var(--dim); color: #666; font-size: 8px;}
+
+        /* ==========================================================================
+           6. SEÇÃO 3: MAPA MENTAL (FULLSCREEN)
+           ========================================================================== */
+        #mindmap-section {
+            /* Deixa a área livre para interagir com os nós no fundo */
+            display: flex; justify-content: center; align-items: flex-start;
+        }
+
+        .graph-instructions {
+            margin-top: 80px; background: rgba(0,0,0,0.8); border: 1px solid var(--dim); 
+            padding: 15px 30px; color: #888; font-size: 10px; text-align: center;
+            transition: opacity 0.5s;
+        }
+        .graph-instructions.hidden { opacity: 0; pointer-events: none; }
+
+        /* Painel Lateral do Nó (Abre ao clicar) */
+        #node-panel {
+            position: fixed; top: 80px; right: -400px; bottom: 80px; width: 350px;
+            background: rgba(3,3,3,0.95); border: 1px solid var(--dim); border-left: 2px solid var(--fg);
+            padding: 25px; display: flex; flex-direction: column; z-index: 200;
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #node-panel.active { right: 20px; }
+        
+        .node-title { font-size: 18px; color: var(--fg); margin-bottom: 5px; font-weight: bold;}
+        .node-desc { color: #888; font-size: 9px; line-height: 1.5; border-bottom: 1px dashed var(--dim); padding-bottom: 15px; margin-bottom: 15px; text-transform: none;}
+        .node-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 9px; border-bottom: 1px solid rgba(255,255,255,0.05);}
+        .node-row span:first-child { color: #555; }
+        .node-row span:last-child { color: var(--fg); text-align: right;}
+        
+        .btn-action { margin-top: auto; padding: 12px; border: 1px solid var(--fg); background: transparent; color: var(--fg); cursor: pointer; font-family: inherit; transition: 0.2s;}
+        .btn-action:hover { background: var(--fg); color: var(--bg); }
+        .btn-close { margin-top: 10px; padding: 10px; border: 1px dashed var(--dim); background: transparent; color: #666; cursor: pointer; font-family: inherit; transition: 0.2s;}
+        .btn-close:hover { color: var(--fg); border-color: var(--fg); }
+
+    </style>
+</head>
+<body>
+
+    <!-- CAMADA 1: Efeitos Visuais Fixos -->
+    <div class="background-grid"></div>
+    <div class="crt-overlay"></div>
+
+    <!-- CAMADA 2: O Motor 3D (WebGL) -->
+    <div id="webgl-container"></div>
+
+    <!-- UI Fixa Global -->
+    <div class="fixed-header">
+        <div class="header-left">\\\ AEGIS<span>OS</span></div>
+        <div class="header-right interactive">
+            <span>GET STARTED</span>
+            <span>DOCUMENTATION</span>
+        </div>
+    </div>
+    <div class="fixed-footer">
+        <span>MEM: 1024MB ALLOCATED</span>
+        <span>STATUS: <span class="blinking">RECORDING</span></span>
+    </div>
+
+    <!-- CAMADA 3: O Conteúdo que Rola (Scroll) -->
+    <div id="scroll-layer">
+        
+        <!-- SEÇÃO 1: HERO (GLOBO GIGANTE E HUD) -->
+        <section id="hero-section">
+            <div class="left-panel interactive">
+                <div class="hud-box">
+                    <span class="highlight">SYSTEM INTEGRITY CHECK</span><br><br>
+                    NO SIGNIFICANT DRIFTS IN SQLITE DB PATTERNS RECORDED FOR THE LAST 24 HOURS.<br><br>
+                    > PARSING FRONTMATTER...<br>
+                    > BUILDING KNOWLEDGE GRAPH...<br>
+                    > 42 NODES INDEXED.<br>
+                    > STARTING WEBSOCKET SERVER...<br>
+                    > SQLITE CONNECTION: <span class="highlight">SECURE.</span>
+                </div>
+                
+                <div class="coords">
+                    <span class="highlight">AEGIS CORE, // NODE_01</span><br>
+                    [127.0.0.1:3000]
+                </div>
+                
+                <div class="hud-box" style="margin-top: auto;">
+                    GRAPH ENERGY FLUX OPTIMAL<br>
+                    <span class="highlight">LOCAL DB: SYNCED 100%</span>
+                </div>
+            </div>
+
+            <div class="right-panel interactive">
+                <div class="ascii-box" id="ascii-art"></div>
+                <div style="color: #666; font-size: 8px; line-height: 1.5;">
+                    AEGIS IS BREAKING THE BOUNDARIES OF LEARNING ORGANIZATION.<br><br>
+                    MAPPING THE FINAL FRONTIER OF YOUR KNOWLEDGE GRAPH. WE ARE COMMITTED TO LINKING THE COST OF ACCESS TO IDEAS WITH OFFLINE TECHNOLOGIES.
+                </div>
+                
+                <div class="accordion">
+                    <div class="accordion-header">
+                        <span>> ARCHITECTURE</span><span>---</span>
+                    </div>
+                    <div class="accordion-item"><span>01 &nbsp; MARKDOWN SERVICE</span><span>[+]</span></div>
+                    <div class="accordion-item"><span>02 &nbsp; GRAPH VISUALIZER</span><span>[+]</span></div>
+                    <div class="accordion-item"><span>03 &nbsp; KANBAN SYSTEM</span><span>[+]</span></div>
+                </div>
+
+                <button class="btn-boot" onclick="document.getElementById('explanation-section').scrollIntoView()">INITIALIZE BOOT SEQUENCE</button>
+            </div>
+
+            <div class="scroll-indicator interactive" onclick="document.getElementById('explanation-section').scrollIntoView()">
+                SCROLL TO PROCEED<br>v
+            </div>
+        </section>
+
+        <!-- SEÇÃO 2: CARDS DE EXPLICAÇÃO -->
+        <section id="explanation-section" class="content-section">
+            <h2 style="color: var(--fg); margin-bottom: 50px; font-size: 16px; border-bottom: 1px dashed var(--dim); padding-bottom: 10px;">> DECODING THE SYSTEM</h2>
+            <div class="cards-grid interactive">
+                <div class="info-card">
+                    <h3>01 // OFFLINE FIRST</h3>
+                    <p>O Aegis foi projetado para rodar localmente. Sem nuvem obrigatória. Sem assinaturas. Ele lê seus arquivos Markdown (conteúdo puro) e constrói o ecossistema em tempo real usando Node e SQLite.</p>
+                    <span class="tag">#PRIVACY</span> <span class="tag">#LOCAL</span>
+                </div>
+                <div class="info-card">
+                    <h3>02 // MARKDOWN ENGINE</h3>
+                    <p>Cada artigo, nota ou projeto é um arquivo <code>.md</code> vivo. O sistema monitora alterações e faz o parse do Frontmatter (YAML) e dos <code>[[WikiLinks]]</code> instantaneamente para gerar as conexões.</p>
+                    <span class="tag">#MARKDOWN</span> <span class="tag">#CHOKIDAR</span>
+                </div>
+                <div class="info-card">
+                    <h3>03 // KNOWLEDGE GRAPH</h3>
+                    <p>Ao interligar suas anotações, o Aegis gera uma constelação de dados dinâmica, fisicamente separada no espaço. Role para baixo para acessar o mergulho na interface de grafos estruturados.</p>
+                    <span class="tag">#CYTOSCAPE</span> <span class="tag">#THREEJS</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 3: O MAPA MENTAL -->
+        <section id="mindmap-section">
+            <div class="graph-instructions interactive" id="graph-header">
+                <span class="highlight" style="color: var(--fg); font-weight: bold;">> KNOWLEDGE GRAPH ATIVO</span><br><br>
+                [ USE O MOUSE PARA GIRAR. CLIQUE NOS NÓS (PLANETAS) PARA EXTRAIR DADOS ]
+            </div>
+        </section>
+
+    </div>
+
+    <!-- UI DO NÓ (Para a seção do Mapa Mental) -->
+    <div id="node-panel" class="interactive">
+        <div class="node-title" id="p-title">NODE_NAME</div>
+        <div class="node-desc" id="p-desc">Descrição do arquivo carregada do frontmatter markdown.</div>
+        
+        <div class="node-row"><span>STATUS_ESTUDO:</span><span id="p-status">EM PROGRESSO</span></div>
+        <div class="node-row"><span>DIFICULDADE:</span><span id="p-diff">AVANÇADO</span></div>
+        <div class="node-row"><span>ROADMAP_LINK:</span><span id="p-roadmap">BACKEND</span></div>
+        <div class="node-row"><span>TEMPO_ESTIMADO:</span><span id="p-time">40H</span></div>
+        
+        <button class="btn-action">> ABRIR ARQUIVO .MD</button>
+        <button class="btn-close" id="btn-close-node">< VOLTAR AO GRAFO</button>
+    </div>
+
+    <!-- LÓGICA DO THREE.JS -->
+    <script>
+        /*
+        * A ENGENHARIA DE SEPARAÇÃO FÍSICA:
+        * Em vez de misturar ou alterar opacidade, colocamos o Globo em Y=0 e o Grafo em Y=-100.
+        * O scroll controla uma viagem de câmera (Tween) entre esses dois mundos independentes.
+        */
+
+        // ==========================================
+        // 1. SETUP DA CENA (WEBGL)
+        // ==========================================
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030303, 0.02); // Névoa sci-fi
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Posição da câmera para o Globo (Hero). Deslocada p/ direita para dar espaço ao painel esquerdo.
+        const globeCamPos = { x: 5, y: 0, z: 25 }; 
+        // Posição da câmera para o Grafo (Lá embaixo)
+        const graphCamPos = { x: 0, y: -100, z: 20 };
+        
+        camera.position.set(globeCamPos.x, globeCamPos.y, globeCamPos.z);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.enableZoom = false; // Começa travado para não atrapalhar o scroll do site
+
+        // ==========================================
+        // 2. CONSTRUINDO O GLOBO E ESTRELAS (Y = 0)
+        // ==========================================
+        const globeGroup = new THREE.Group();
+        scene.add(globeGroup);
+
+        // O globo em si (Wireframe + Partículas)
+        const sphereGeo = new THREE.SphereGeometry(7, 64, 64);
+        const particlesMat = new THREE.PointsMaterial({ color: 0x888888, size: 0.03, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+        const globePoints = new THREE.Points(sphereGeo, particlesMat);
+        
+        const wireframeGeo = new THREE.SphereGeometry(7.05, 32, 32);
+        const wireframeMat = new THREE.MeshBasicMaterial({ color: 0x333333, wireframe: true, transparent: true, opacity: 0.2 });
+        const wireframeGlobe = new THREE.Mesh(wireframeGeo, wireframeMat);
+        
+        globeGroup.add(globePoints, wireframeGlobe);
+
+        // Anéis e Estrelas orbitando (Satélites)
+        const satellites = [];
+        const createRingWithSatellite = (radius, rotX, rotY) => {
+            const ringGroup = new THREE.Group();
+            ringGroup.rotation.set(rotX, rotY, 0);
+
+            // Anel
+            const ringGeo = new THREE.TorusGeometry(radius, 0.015, 16, 100);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.5 });
+            ringGroup.add(new THREE.Mesh(ringGeo, ringMat));
+
+            // Estrela (Satélite)
+            const satGeo = new THREE.SphereGeometry(0.15, 16, 16);
+            const satMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const sat = new THREE.Mesh(satGeo, satMat);
+            sat.position.x = radius;
+            
+            const pivot = new THREE.Group();
+            pivot.add(sat);
+            ringGroup.add(pivot);
+
+            globeGroup.add(ringGroup);
+            satellites.push(pivot); // Guardamos o pivô para animar
+        };
+
+        createRingWithSatellite(9.5, Math.PI / 2, 0);
+        createRingWithSatellite(11, Math.PI / 3, Math.PI / 4);
+        createRingWithSatellite(12.5, -Math.PI / 6, -Math.PI / 4);
+
+
+        // ==========================================
+        // 3. CONSTRUINDO O MAPA MENTAL (Y = -100)
+        // ==========================================
+        const graphGroup = new THREE.Group();
+        graphGroup.position.y = -100; // Fica completamente isolado fisicamente
+        scene.add(graphGroup);
+
+        const graphData = [
+            { id: 'python', name: 'PYTHON.MD', desc: 'Linguagem base para Backend, IA e automação.', status: 'ESTUDANDO', diff: 'INICIANTE', time: '40H', roadmap: 'BACKEND', pos: [-5, 2, 4], radius: 0.6 },
+            { id: 'fastapi', name: 'FASTAPI.MD', desc: 'Framework web moderno e rápido para construir APIs.', status: 'ESTUDANDO', diff: 'INTERMEDIÁRIO', time: '25H', roadmap: 'BACKEND', pos: [-8, 4, 1], radius: 0.5 },
+            { id: 'docker', name: 'DOCKER.MD', desc: 'Plataforma de containerização para distribuir aplicações.', status: 'ESTUDANDO', diff: 'INTERMEDIÁRIO', time: '20H', roadmap: 'BACKEND', pos: [-6, -3, 3], radius: 0.5 },
+            { id: 'linux', name: 'LINUX.MD', desc: 'Sistema operacional base de servidores.', status: 'REVISÃO', diff: 'INICIANTE', time: '30H', roadmap: 'BACKEND', pos: [-3, -5, 5], radius: 0.4 },
+            { id: 'llm', name: 'LLM.MD', desc: 'Large Language Models. Redes neurais gigantes.', status: 'ESTUDANDO', diff: 'AVANÇADO', time: '50H', roadmap: 'AI-ENG', pos: [5, 3, -3], radius: 0.7 },
+            { id: 'rag', name: 'RAG.MD', desc: 'Retrieval-Augmented Generation. Combina busca com LLM.', status: 'NÃO INICIADO', diff: 'AVANÇADO', time: '30H', roadmap: 'AI-ENG', pos: [8, 5, -1], radius: 0.5 },
+            { id: 'agents', name: 'AGENTS.MD', desc: 'Sistemas autônomos que raciocinam usando LLM.', status: 'NÃO INICIADO', diff: 'AVANÇADO', time: '35H', roadmap: 'AI-ENG', pos: [6, 0, -6], radius: 0.5 },
+            { id: 'linear', name: 'ALGEBRA.MD', desc: 'Vetores, matrizes e transformações lineares.', status: 'NÃO INICIADO', diff: 'INTERMEDIÁRIO', time: '35H', roadmap: 'MATH', pos: [2, -3, -5], radius: 0.4 },
+            { id: 'calculus', name: 'CALCULUS.MD', desc: 'Fundamentos de cálculo diferencial e integral.', status: 'NÃO INICIADO', diff: 'INTERMEDIÁRIO', time: '40H', roadmap: 'MATH', pos: [4, -5, -3], radius: 0.4 }
+        ];
+
+        const links = [
+            ['python', 'fastapi'], ['python', 'docker'], ['python', 'llm'], ['python', 'linux'],
+            ['docker', 'linux'], ['fastapi', 'linux'],
+            ['llm', 'rag'], ['llm', 'agents'], ['rag', 'agents'],
+            ['calculus', 'linear'], ['linear', 'llm'], ['calculus', 'llm']
+        ];
+
+        const planetMeshes = [];
+        const nodeCoreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+        const nodeWireMat = new THREE.MeshBasicMaterial({ color: 0x888888, wireframe: true, transparent: true, opacity: 0.3 });
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x333333, transparent: true, opacity: 0.6 });
+
+        graphData.forEach(node => {
+            const group = new THREE.Group();
+            group.position.set(node.pos[0], node.pos[1], node.pos[2]);
+
+            const core = new THREE.Mesh(new THREE.SphereGeometry(node.radius * 0.4, 16, 16), nodeCoreMat);
+            const wire = new THREE.Mesh(new THREE.SphereGeometry(node.radius, 16, 16), nodeWireMat);
+            
+            group.add(core); group.add(wire);
+            wire.userData = node; // Dados armazenados no wireframe para o Raycaster
+            planetMeshes.push(wire);
+            graphGroup.add(group);
+        });
+
+        links.forEach(link => {
+            const source = graphData.find(n => n.id === link[0]);
+            const target = graphData.find(n => n.id === link[1]);
+            if(source && target) {
+                const geo = new THREE.BufferGeometry().setFromPoints([ new THREE.Vector3(...source.pos), new THREE.Vector3(...target.pos) ]);
+                graphGroup.add(new THREE.Line(geo, lineMat));
+            }
+        });
+
+
+        // ==========================================
+        // 4. MÁQUINA DE ESTADO: SCROLL PARA MERGULHAR NO GRAFO
+        // ==========================================
+        let currentState = 'globe'; // 'globe' ou 'graph'
+        const graphHeader = document.getElementById('graph-header');
+
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            
+            // Quando a página bater no fim, a câmera viaja para o Y = -100 (Mundo do Grafo)
+            if (scrollY >= maxScroll - 50 && currentState !== 'graph') {
+                currentState = 'graph';
+                controls.enableZoom = true; // Libera o zoom para interagir com o grafo
+                
+                new TWEEN.Tween(camera.position)
+                    .to({ x: graphCamPos.x, y: graphCamPos.y, z: graphCamPos.z }, 1500)
+                    .easing(TWEEN.Easing.Cubic.InOut).start();
+                
+                new TWEEN.Tween(controls.target)
+                    .to({ x: 0, y: -100, z: 0 }, 1500)
+                    .easing(TWEEN.Easing.Cubic.InOut).start();
+
+            } else if (scrollY < maxScroll - 50 && currentState !== 'globe') {
+                currentState = 'globe';
+                controls.enableZoom = false; // Trava o zoom ao subir
+                closeNodePanel();
+                
+                new TWEEN.Tween(camera.position)
+                    .to({ x: globeCamPos.x, y: globeCamPos.y, z: globeCamPos.z }, 1500)
+                    .easing(TWEEN.Easing.Cubic.InOut).start();
+                
+                new TWEEN.Tween(controls.target)
+                    .to({ x: 0, y: 0, z: 0 }, 1500)
+                    .easing(TWEEN.Easing.Cubic.InOut).start();
+            }
+        });
+
+        // ==========================================
+        // 5. INTERAÇÃO E CLIQUE NO MAPA MENTAL
+        // ==========================================
+        let isNodeFocused = false;
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const nodePanel = document.getElementById('node-panel');
+
+        window.addEventListener('click', (e) => {
+            // Só habilita o clique nos planetas se a câmera já desceu para o Grafo
+            if (currentState !== 'graph') return;
+
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(planetMeshes);
+            if(intersects.length > 0) focusOnNode(intersects[0].object);
+        });
+
+        function focusOnNode(mesh) {
+            isNodeFocused = true;
+            graphHeader.classList.add('hidden'); // Oculta aviso central
+
+            const nodeData = mesh.userData;
+            // A posição real absoluta do alvo precisa somar a posição do grupo (y=-100)
+            const absoluteTargetPos = new THREE.Vector3(
+                mesh.parent.position.x, 
+                mesh.parent.position.y - 100, 
+                mesh.parent.position.z
+            );
+            
+            // Coloca a câmera perto do nó, puxando pra direita p/ o painel lateral não cobrir
+            const camOffset = mesh.parent.position.clone().normalize().multiplyScalar(4); 
+            const newCamPos = absoluteTargetPos.clone().add(camOffset);
+            newCamPos.x -= 2; 
+
+            new TWEEN.Tween(camera.position).to({ x: newCamPos.x, y: newCamPos.y, z: newCamPos.z }, 1000).easing(TWEEN.Easing.Cubic.Out).onUpdate(() => controls.update()).start();
+            new TWEEN.Tween(controls.target).to({ x: absoluteTargetPos.x, y: absoluteTargetPos.y, z: absoluteTargetPos.z }, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+
+            // Preenche DOM do painel lateral
+            document.getElementById('p-title').innerText = nodeData.name;
+            document.getElementById('p-desc').innerText = nodeData.desc;
+            document.getElementById('p-status').innerText = nodeData.status;
+            document.getElementById('p-diff').innerText = nodeData.diff;
+            document.getElementById('p-roadmap').innerText = nodeData.roadmap;
+            document.getElementById('p-time').innerText = nodeData.time;
+
+            nodePanel.classList.add('active');
+        }
+
+        function closeNodePanel() {
+            if(!isNodeFocused) return;
+            isNodeFocused = false;
+            nodePanel.classList.remove('active');
+            graphHeader.classList.remove('hidden');
+            
+            // Retorna câmera para a visão geral do Grafo
+            new TWEEN.Tween(camera.position).to({ x: graphCamPos.x, y: graphCamPos.y, z: graphCamPos.z }, 1000).easing(TWEEN.Easing.Cubic.InOut).start();
+            new TWEEN.Tween(controls.target).to({ x: 0, y: -100, z: 0 }, 1000).easing(TWEEN.Easing.Cubic.InOut).start();
+        }
+        document.getElementById('btn-close-node').addEventListener('click', closeNodePanel);
+
+        // ==========================================
+        // 6. UTILITÁRIOS E LOOP DE ANIMAÇÃO
+        // ==========================================
+        const asciiBox = document.getElementById('ascii-art');
+        setInterval(() => {
+            const chars = ['/', '\\', '|', '-', '+', ':', '.', ' '];
+            let art = '';
+            for(let i=0; i<15; i++) {
+                for(let j=0; j<40; j++) art += chars[Math.floor(Math.random() * chars.length)];
+                art += '\n';
+            }
+            asciiBox.innerText = art;
+        }, 2000);
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            TWEEN.update(time);
+            controls.update();
+
+            // Animações Constantes
+            globePoints.rotation.y += 0.001;
+            wireframeGlobe.rotation.y += 0.001;
+            
+            // Rotação das órbitas das estrelas em velocidades diferentes
+            if(satellites.length > 0) {
+                satellites[0].rotation.z -= 0.005;
+                satellites[1].rotation.z += 0.003;
+                satellites[2].rotation.z -= 0.004;
+            }
+
+            // Gira apenas o grupo de nós se não estiver focado
+            if (!isNodeFocused) {
+                graphGroup.rotation.y += 0.0005;
+            }
+
+            // Gira os planetas em seu próprio eixo
+            planetMeshes.forEach(p => { p.rotation.x += 0.01; p.rotation.y += 0.01; });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

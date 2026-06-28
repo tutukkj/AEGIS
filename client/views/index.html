@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis — Learning Operating System</title>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Estilos base customizados -->
+  <link rel="stylesheet" href="/css/app.css">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            bg: 'hsl(225, 25%, 8%)',
+            surface: 'hsl(225, 20%, 12%)',
+            'surface-hover': 'hsl(225, 20%, 16%)',
+            border: 'hsl(225, 15%, 20%)',
+            accent: 'hsl(250, 85%, 65%)',
+            'accent-hover': 'hsl(250, 85%, 72%)',
+            'accent-glow': 'rgba(110, 89, 242, 0.15)',
+            textPrimary: 'hsl(220, 15%, 90%)',
+            textSecondary: 'hsl(220, 10%, 55%)',
+            textMuted: 'hsl(220, 8%, 40%)',
+            success: 'hsl(150, 70%, 45%)',
+            warning: 'hsl(38, 92%, 55%)',
+            error: 'hsl(0, 75%, 55%)',
+            info: 'hsl(200, 85%, 55%)'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="h-full overflow-hidden bg-bg text-textPrimary font-sans">
+
+  <!-- Layout Principal -->
+  <div class="h-full flex overflow-hidden">
+    
+    <!-- Barra Lateral (Sidebar) -->
+    <aside id="sidebar-container" class="w-64 border-r border-border bg-surface/50 backdrop-blur-md flex flex-col flex-shrink-0 z-20"></aside>
+    
+    <!-- Área de Conteúdo Principal -->
+    <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+      
+      <!-- Barra Superior (Topbar) -->
+      <header class="h-14 border-b border-border bg-surface/30 backdrop-blur-md flex items-center justify-between px-6 z-10">
+        <!-- Breadcrumbs & Título da página -->
+        <div id="breadcrumb-container" class="flex items-center gap-2 text-sm"></div>
+        
+        <!-- Controles de Usuário & Timer Pomodoro rápido -->
+        <div class="flex items-center gap-4">
+          <!-- Atalho de Busca Rápida -->
+          <button id="quick-search-trigger" class="flex items-center gap-2 bg-black/30 border border-border hover:border-accent/40 rounded-xl px-3 py-1.5 text-xs text-textSecondary transition-colors" title="Buscar (Ctrl+K)">
+            <i data-lucide="search" class="w-3.5 h-3.5"></i>
+            <span>Buscar...</span>
+            <kbd class="bg-surface border border-border px-1.5 py-0.5 rounded text-[10px] text-textMuted font-mono">Ctrl+K</kbd>
+          </button>
+          
+          <!-- Estado da Conexão Websocket -->
+          <div id="ws-status" class="w-2.5 h-2.5 rounded-full bg-textMuted" title="Desconectado"></div>
+          
+          <!-- Menu Usuário / Logout -->
+          <div class="relative">
+            <button id="user-menu-btn" class="w-8 h-8 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-accent text-xs font-semibold hover:bg-accent/30 transition-colors">
+              AD
+            </button>
+            <!-- Dropdown do Usuário -->
+            <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-surface border border-border rounded-xl shadow-xl py-1 z-30">
+              <a href="#settings" class="flex items-center gap-2 px-4 py-2 text-xs hover:bg-surface-hover text-textPrimary transition-colors">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+                <span>Configurações</span>
+              </a>
+              <hr class="border-border my-1">
+              <button id="logout-btn" class="w-full flex items-center gap-2 px-4 py-2 text-xs hover:bg-surface-hover text-error text-left transition-colors">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                <span>Sair do Aegis</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      <!-- Container das Páginas SPA -->
+      <main id="main-content" class="flex-1 overflow-y-auto min-w-0 relative"></main>
+    </div>
+  </div>
+
+  <!-- Widget Pomodoro Flutuante -->
+  <div id="pomodoro-widget-container" class="fixed bottom-6 right-6 z-40"></div>
+
+  <!-- Paleta de Comandos (Ctrl+K Overlay) -->
+  <div id="command-palette-container" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-24 px-4 z-50"></div>
+
+  <!-- Container de Notificações (Toast) -->
+  <div id="toast-container" class="fixed bottom-6 left-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Inclusão de Scripts das Bibliotecas -->
+  <!-- Marked.js (Markdown → HTML) - Carregado em Phase 2 -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <!-- Cytoscape.js (Visualização de Grafo) - Carregado em Phase 3 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.29.2/cytoscape.min.js"></script>
+  
+  <!-- Sortable.js (Kanban Drag and Drop) - Carregado em Phase 6 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+  
+  <!-- KaTeX (Fórmulas Matemáticas LaTeX) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  
+  <!-- Mermaid.js (Diagramas e Fluxogramas) -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.8.0/dist/mermaid.min.js"></script>
+  <script>
+    // Inicializar Mermaid com configurações escuras
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      securityLevel: 'loose',
+      themeVariables: {
+        background: '#13151a',
+        primaryColor: '#6e59f2',
+        primaryTextColor: '#e2e8f0',
+        lineColor: '#2d313f'
+      }
+    });
+  </script>
+  
+  <!-- Aplicação (JS Modules) -->
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

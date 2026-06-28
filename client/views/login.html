@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis — Entrar</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            bg: 'hsl(225, 25%, 8%)',
+            surface: 'hsl(225, 20%, 12%)',
+            border: 'hsl(225, 15%, 20%)',
+            accent: 'hsl(250, 85%, 65%)',
+            'accent-hover': 'hsl(250, 85%, 72%)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: hsl(225, 25%, 8%);
+      color: hsl(220, 15%, 90%);
+    }
+    .glass {
+      background: rgba(18, 20, 30, 0.7);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+    .glow {
+      box-shadow: 0 0 40px 5px rgba(110, 89, 242, 0.15);
+    }
+  </style>
+</head>
+<body class="h-full flex items-center justify-center p-4">
+  <div class="w-full max-w-md glass glow rounded-2xl p-8 flex flex-col gap-6 transition-all duration-300 transform hover:scale-[1.01]">
+    <!-- Cabeçalho -->
+    <div class="text-center flex flex-col items-center gap-3">
+      <div class="w-12 h-12 bg-accent/20 rounded-xl border border-accent/40 flex items-center justify-center text-accent">
+        <i data-lucide="shield" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Aegis</h1>
+        <p class="text-xs text-gray-400 mt-1">Learning Operating System</p>
+      </div>
+    </div>
+
+    <!-- Formulário -->
+    <form id="loginForm" class="flex flex-col gap-4">
+      <div class="flex flex-col gap-2">
+        <label for="password" class="text-xs font-semibold text-gray-300 uppercase tracking-wider">Senha do Sistema</label>
+        <div class="relative">
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            placeholder="Digite sua senha" 
+            class="w-full bg-black/40 border border-border rounded-xl py-3 px-4 pl-11 text-sm focus:outline-none focus:border-accent/80 transition-colors placeholder:text-gray-600"
+            required
+            autoFocus
+          >
+          <div class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Mensagem de erro -->
+      <div id="errorMessage" class="hidden text-xs text-red-400 bg-red-500/10 border border-red-500/20 py-2.5 px-3 rounded-lg flex items-center gap-2 animate-pulse">
+        <i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0"></i>
+        <span id="errorText">Senha inválida</span>
+      </div>
+
+      <button 
+        type="submit" 
+        class="w-full bg-accent hover:bg-accent-hover text-white font-medium py-3 rounded-xl transition-all duration-200 shadow-lg shadow-accent/20 active:transform active:scale-[0.98] text-sm mt-2 flex items-center justify-center gap-2"
+      >
+        <span>Entrar</span>
+        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // Inicializar ícones do Lucide
+    lucide.createIcons();
+
+    const loginForm = document.getElementById('loginForm');
+    const passwordInput = document.getElementById('password');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const password = passwordInput.value;
+      errorMessage.classList.add('hidden');
+      
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          // Sucesso, redireciona para o painel principal
+          window.location.href = '/';
+        } else {
+          showError(data.error || 'Falha no login');
+        }
+      } catch (err) {
+        showError('Erro ao conectar ao servidor. Tente novamente.');
+      }
+    });
+
+    function showError(message) {
+      errorText.textContent = message;
+      errorMessage.classList.remove('hidden');
+      passwordInput.value = '';
+      passwordInput.focus();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1202 @@
+<!-- STREAMING_CHUNK:Setting up the HTML structure and styles... -->
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS // Cosmos Terminal</title>
+
+    <!-- Fonte Terminal -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&display=swap" rel="stylesheet">
+
+    <!-- Three.js e Tween.js para o ambiente 3D e animações de câmera -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <!-- OrbitControls para permitir girar a constelação -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        /* --- SETUP BÁSICO E VARIÁVEIS --- */
+        :root {
+            --bg: #020203;
+            --fg: #e2e8f0;
+            --dim: #334155;
+            --accent: #5EEAD4;
+            /* Azul/Ciano Terminal */
+            --font-main: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--fg);
+            font-family: var(--font-main);
+            overflow: hidden;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        /* --- EFEITOS CRT DE FUNDO --- */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        .crt-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* --- MIRA CENTRAL E HUD MÍNIMO --- */
+        .hud-mira {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .hud-mira::after {
+            content: '+';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.2);
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--dim);
+            padding-bottom: 10px;
+            z-index: 10;
+        }
+
+        .bottom-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: space-between;
+            color: #64748b;
+            font-size: 9px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* --- PAINEL DE INFORMAÇÕES DO PLANETA (MARKDOWN) --- */
+        #info-panel {
+            position: absolute;
+            top: 60px;
+            right: -400px;
+            /* Escondido fora da tela */
+            width: 350px;
+            bottom: 60px;
+            background: rgba(2, 2, 3, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--dim);
+            border-right: 3px solid var(--accent);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            padding: 25px;
+            transition: right 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Classe para abrir o painel */
+        #info-panel.active {
+            right: 30px;
+        }
+
+        .panel-header {
+            margin-bottom: 20px;
+            border-bottom: 1px dashed var(--dim);
+            padding-bottom: 15px;
+        }
+
+        .panel-title {
+            font-size: 24px;
+            color: var(--accent);
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .panel-subtitle {
+            color: #94a3b8;
+            font-size: 10px;
+            margin-top: 5px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 10px;
+        }
+
+        .data-label {
+            color: #64748b;
+        }
+
+        .data-value {
+            color: var(--fg);
+            text-align: right;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            border: 1px solid var(--dim);
+            padding: 4px 8px;
+            font-size: 9px;
+            color: var(--accent);
+        }
+
+        .btn-action {
+            margin-top: auto;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+
+        .btn-action:hover {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .btn-close {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px dashed var(--dim);
+            background: transparent;
+            color: #94a3b8;
+            font-family: inherit;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .btn-close:hover {
+            color: var(--fg);
+            border-color: var(--fg);
+        }
+
+        /* Tooltip flutuante para o mouse */
+        #tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 5px 10px;
+            font-size: 10px;
+            pointer-events: none;
+            display: none;
+            z-index: 100;
+        }
+
+        /* Menu link to graph */
+        .menu-link {
+            color: #64748b;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            padding-bottom: 2px;
+            transition: border-color 0.3s;
+        }
+
+        .menu-link:hover {
+            border-color: var(--fg);
+            color: var(--fg);
+        }
+    </style>
+</head>
+<!-- STREAMING_CHUNK:Building the layout and adding Three.js script... -->
+
+<body>
+
+    <div class="crt-overlay"></div>
+    <div id="canvas-container"></div>
+    <div class="hud-mira"></div>
+
+    <div class="top-bar">
+        <div>\\\ AEGIS_OS // CONSTELAÇÃO</div>
+        <div style="display:flex; gap: 20px;">
+            <a href="Aegis_Graph.html" class="menu-link">> ABRIR MODO GRAFO_</a>
+            <div style="color: #64748b;">> SELECIONE UM NÓ PARA LER OS DADOS</div>
+        </div>
+    </div>
+
+    <!-- PAINEL QUE ABRE AO CLICAR NO PLANETA -->
+    <div id="info-panel">
+        <div class="panel-header">
+            <div class="panel-title" id="p-title">NOME_DO_NO</div>
+            <div class="panel-subtitle" id="p-desc">Descrição do nó carregada do markdown.</div>
+        </div>
+
+        <div class="data-row">
+            <span class="data-label">STATUS_ESTUDO:</span>
+            <span class="data-value" id="p-status">EM PROGRESSO</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">DIFICULDADE:</span>
+            <span class="data-value" id="p-diff">AVANÇADO</span>
+        </div>
+        <div class="data-row">
+            <span class="data-label">TEMPO_ESTIMADO:</span>
+            <span class="data-value" id="p-time">40H</span>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <span class="data-label">TAGS_ASSOCIADAS:</span>
+            <div class="tags-container" id="p-tags">
+                <!-- Tags inseridas via JS -->
+            </div>
+        </div>
+
+        <a href="Aegis_Graph.html" class="btn-action" id="btn-open-file">> ABRIR ARQUIVO MARKDOWN</a>
+        <button class="btn-close" id="btn-voltar">
+            < VOLTAR AO MAPA GERAL</button>
+    </div>
+
+    <div class="bottom-bar">
+        <span>SISTEMA DE NAVEGAÇÃO: <span style="color: var(--accent);">ORBITAL_ATIVO</span></span>
+        <span>RENDER_ENGINE: WEBGL_THREE.JS</span>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script>
+        // ==========================================
+        // DADOS DO SISTEMA (Baseado no implementation_plan.md)
+        // ==========================================
+        const graphData = [
+            { id: 'aegis', name: 'AEGIS CORE', desc: 'Sistema Operacional de Aprendizado', status: 'ativo', diff: 'core', time: 'N/A', tags: ['sistema', 'root'], pos: [0, 0, 0], radius: 0.8 },
+
+            { id: 'python', name: 'PYTHON', desc: 'Linguagem base para Backend e IA', status: 'estudando', diff: 'iniciante', time: '40H', tags: ['backend', 'linguagem'], pos: [-6, 3, -2], radius: 0.5 },
+            { id: 'fastapi', name: 'FASTAPI', desc: 'Framework web moderno e rápido', status: 'estudando', diff: 'intermediário', time: '25H', tags: ['backend', 'api'], pos: [-8, 5, -4], radius: 0.4 },
+            { id: 'docker', name: 'DOCKER', desc: 'Plataforma de containerização', status: 'estudando', diff: 'intermediário', time: '20H', tags: ['devops', 'infra'], pos: [-4, 6, 1], radius: 0.4 },
+            { id: 'linux', name: 'LINUX', desc: 'Base de servidores e infraestrutura', status: 'revisão', diff: 'iniciante', time: '30H', tags: ['devops', 'os'], pos: [-3, 8, 3], radius: 0.4 },
+
+            { id: 'llm', name: 'LLM', desc: 'Large Language Models', status: 'estudando', diff: 'avançado', time: '50H', tags: ['ai', 'nlp'], pos: [6, -2, -3], radius: 0.6 },
+            { id: 'rag', name: 'RAG', desc: 'Retrieval-Augmented Generation', status: 'não iniciado', diff: 'avançado', time: '30H', tags: ['ai', 'busca'], pos: [8, -4, -1], radius: 0.4 },
+            { id: 'agents', name: 'AGENTES IA', desc: 'Sistemas autônomos baseados em LLM', status: 'não iniciado', diff: 'avançado', time: '35H', tags: ['ai', 'automação'], pos: [5, -6, -5], radius: 0.4 },
+
+            { id: 'algebra', name: 'ÁLGEBRA LINEAR', desc: 'Vetores e matrizes para IA', status: 'não iniciado', diff: 'intermediário', time: '35H', tags: ['matemática', 'fundamentos'], pos: [4, 4, 5], radius: 0.4 },
+            { id: 'calculo', name: 'CÁLCULO', desc: 'Diferencial e integral para IA', status: 'não iniciado', diff: 'intermediário', time: '40H', tags: ['matemática', 'fundamentos'], pos: [7, 2, 4], radius: 0.4 }
+        ];
+
+        // Definindo as arestas/conexões
+        const links = [
+            ['aegis', 'python'], ['aegis', 'llm'], ['aegis', 'algebra'],
+            ['python', 'fastapi'], ['python', 'docker'], ['python', 'llm'],
+            ['docker', 'linux'], ['fastapi', 'linux'],
+            ['llm', 'rag'], ['llm', 'agents'], ['rag', 'agents'], ['rag', 'python'],
+            ['calculo', 'algebra'], ['calculo', 'llm'], ['algebra', 'llm']
+        ];
+
+        // ==========================================
+        // SETUP DO THREE.JS
+        // ==========================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020203, 0.04); // Efeito de profundidade no espaço
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Posição inicial da câmera (visão geral)
+        const initialCameraPos = { x: 0, y: 0, z: 25 };
+        camera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxDistance = 50;
+
+        // Grupo principal da constelação
+        const constellationGroup = new THREE.Group();
+        scene.add(constellationGroup);
+
+        // ==========================================
+        // CRIANDO OS PLANETAS (NÓS) E LINHAS
+        // ==========================================
+        const planetMeshes = []; // Para detectar cliques
+
+        // Materiais com a estética holográfica/wireframe
+        const wireframeMaterial = new THREE.MeshBasicMaterial({ color: 0x334155, wireframe: true, transparent: true, opacity: 0.3 });
+        const coreMaterial = new THREE.MeshBasicMaterial({ color: 0x5EEAD4, transparent: true, opacity: 0.8 });
+
+        // Cria os planetas
+        graphData.forEach(node => {
+            const group = new THREE.Group();
+            group.position.set(node.pos[0], node.pos[1], node.pos[2]);
+
+            // Núcleo brilhante
+            const coreGeo = new THREE.SphereGeometry(node.radius * 0.5, 16, 16);
+            const core = new THREE.Mesh(coreGeo, coreMaterial);
+
+            // Malha wireframe (holograma) ao redor
+            const wireGeo = new THREE.SphereGeometry(node.radius, 16, 16);
+            const wire = new THREE.Mesh(wireGeo, wireframeMaterial);
+
+            group.add(core);
+            group.add(wire);
+
+            // Salvar os dados no objeto 3D para recuperar no clique
+            wire.userData = node;
+            planetMeshes.push(wire);
+
+            constellationGroup.add(group);
+        });
+
+        // Cria as linhas (arestas)
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.4 });
+        links.forEach(link => {
+            const sourceNode = graphData.find(n => n.id === link[0]);
+            const targetNode = graphData.find(n => n.id === link[1]);
+            if (sourceNode && targetNode) {
+                const points = [];
+                points.push(new THREE.Vector3(...sourceNode.pos));
+                points.push(new THREE.Vector3(...targetNode.pos));
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geometry, lineMaterial);
+                constellationGroup.add(line);
+            }
+        });
+
+        // Adiciona partículas no fundo (estrelas menores)
+        const starsGeo = new THREE.BufferGeometry();
+        const starsCount = 500;
+        const posArray = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 60; // Espalhadas em um raio de 60
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const starsMat = new THREE.PointsMaterial({ size: 0.05, color: 0x64748b });
+        const starsMesh = new THREE.Points(starsGeo, starsMat);
+        scene.add(starsMesh);
+
+        // ==========================================
+        // INTERAÇÃO (RAYCASTER, HOVER E CLIQUE)
+        // ==========================================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const tooltip = document.getElementById('tooltip');
+        const infoPanel = document.getElementById('info-panel');
+
+        let hoveredNode = null;
+        let selectedNode = null;
+
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(planetMeshes);
+
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer';
+                const nodeData = intersects[0].object.userData;
+
+                if (hoveredNode !== nodeData.id) {
+                    hoveredNode = nodeData.id;
+                    tooltip.innerHTML = `> ${nodeData.name}`;
+                    tooltip.style.display = 'block';
+                }
+                tooltip.style.left = event.clientX + 15 + 'px';
+                tooltip.style.top = event.clientY + 15 + 'px';
+            } else {
+                document.body.style.cursor = 'default';
+                hoveredNode = null;
+                tooltip.style.display = 'none';
+            }
+        }
+
+        function onClick(event) {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(planetMeshes);
+
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                const nodeData = object.userData;
+                focusOnPlanet(nodeData, object.parent.position);
+            }
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('click', onClick);
+
+        // ==========================================
+        // ANIMAÇÕES DE CÂMERA E PAINEL
+        // ==========================================
+        function focusOnPlanet(nodeData, targetPosition) {
+            selectedNode = nodeData;
+
+            // Calcula uma posição para a câmera um pouco à frente e à direita do planeta
+            // para que o planeta fique alinhado à esquerda e o painel abra à direita.
+            const offset = new THREE.Vector3(2, 0, 4);
+            const newCamPos = targetPosition.clone().add(offset);
+
+            // Animação da posição da câmera
+            new TWEEN.Tween(camera.position)
+                .to({ x: newCamPos.x, y: newCamPos.y, z: newCamPos.z }, 1500)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .onUpdate(() => controls.update())
+                .start();
+
+            // Animação do alvo (para onde a câmera olha)
+            new TWEEN.Tween(controls.target)
+                .to({ x: targetPosition.x, y: targetPosition.y, z: targetPosition.z }, 1500)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .start();
+
+            // Preenche os dados no painel HTML
+            document.getElementById('p-title').innerText = nodeData.name;
+            document.getElementById('p-desc').innerText = nodeData.desc;
+            document.getElementById('p-status').innerText = nodeData.status;
+            document.getElementById('p-diff').innerText = nodeData.diff;
+            document.getElementById('p-time').innerText = nodeData.time;
+
+            const tagsContainer = document.getElementById('p-tags');
+            tagsContainer.innerHTML = '';
+            nodeData.tags.forEach(tag => {
+                const tagEl = document.createElement('div');
+                tagEl.className = 'tag';
+                tagEl.innerText = `#${tag}`;
+                tagsContainer.appendChild(tagEl);
+            });
+
+            // Abre o painel com um leve delay para sincronizar com o voo da câmera
+            setTimeout(() => {
+                infoPanel.classList.add('active');
+            }, 500);
+        }
+
+        // Botão de voltar
+        document.getElementById('btn-voltar').addEventListener('click', () => {
+            selectedNode = null;
+            infoPanel.classList.remove('active');
+
+            // Retorna a câmera para a visão geral
+            new TWEEN.Tween(camera.position)
+                .to({ x: initialCameraPos.x, y: initialCameraPos.y, z: initialCameraPos.z }, 1500)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .onUpdate(() => controls.update())
+                .start();
+
+            new TWEEN.Tween(controls.target)
+                .to({ x: 0, y: 0, z: 0 }, 1500)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .start();
+        });
+
+        // ==========================================
+        // LOOP DE RENDERIZAÇÃO
+        // ==========================================
+        function animate(time) {
+            requestAnimationFrame(animate);
+            TWEEN.update(time);
+            controls.update();
+
+            // Rotação suave de toda a constelação e dos planetas individuais
+            constellationGroup.rotation.y += 0.0005;
+
+            planetMeshes.forEach(mesh => {
+                mesh.parent.rotation.y += 0.005; // Gira o planeta no próprio eixo
+                mesh.parent.rotation.x += 0.002;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Tratamento de Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+
+</html>
+```eof
+
+Now I will generate the `Aegis_Graph.html` file using `cytoscape.js`. I've added a link at the top to return to the 3D
+map.
+
+```html:Aegis_Graph.html
+<!-- STREAMING_CHUNK:Setting up the HTML structure and styles... -->
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS // Knowledge Graph</title>
+
+    <!-- Fonte Monospace técnica e rígida para todo o sistema -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&display=swap" rel="stylesheet">
+
+    <!-- Cytoscape.js (Conforme definido no implementation_plan.md) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+
+    <style>
+        /* --- RESET E VARIÁVEIS DO SISTEMA --- */
+        :root {
+            --bg-color: #030305;
+            /* Preto espaço profundo */
+            --fg-color: #e2e8f0;
+            /* Texto principal */
+            --dim-color: #334155;
+            /* Linhas e bordas inativas */
+            --accent-color: #ffffff;
+            /* Brilho das estrelas/nós */
+            --terminal-green: #10b981;
+            /* Verde para status de sucesso */
+            --grid-color: rgba(255, 255, 255, 0.02);
+            --font-main: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--fg-color);
+            font-family: var(--font-main);
+            overflow: hidden;
+            /* SEM SCROLL - É um HUD */
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* --- EFEITOS CRT E BACKGROUND (A Vibe Velasspace) --- */
+        .background-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .crt-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 3px;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* --- CONTAINER DO MAPA MENTAL (CYTOSCAPE) --- */
+        #cy {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            /* Filtro de brilho para dar aspecto de constelação */
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2));
+        }
+
+        /* --- MIRA CENTRAL E GUIAS DO HUD --- */
+        .center-crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .center-crosshair::before,
+        .center-crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .center-crosshair::before {
+            top: 50%;
+            left: -10px;
+            right: -10px;
+            height: 1px;
+        }
+
+        .center-crosshair::after {
+            left: 50%;
+            top: -10px;
+            bottom: -10px;
+            width: 1px;
+        }
+
+        /* --- HUD (HEADS UP DISPLAY) WRAPPER --- */
+        .hud-wrapper {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            right: 25px;
+            bottom: 25px;
+            border: 1px solid var(--dim-color);
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            pointer-events: none;
+            /* Permite interagir com o grafo atrás */
+        }
+
+        .hud-wrapper>* {
+            pointer-events: auto;
+        }
+
+        /* Reativa clique nos painéis */
+
+        /* Cantoneiras do HUD */
+        .hud-wrapper::before,
+        .hud-wrapper::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--fg-color);
+        }
+
+        .hud-wrapper::before {
+            top: -1px;
+            left: -1px;
+            border-width: 2px 0 0 2px;
+        }
+
+        .hud-wrapper::after {
+            bottom: -1px;
+            right: -1px;
+            border-width: 0 2px 2px 0;
+        }
+
+        /* --- HEADER & NAVEGAÇÃO --- */
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 320px;
+            right: 320px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .logo {
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .logo span {
+            font-weight: 100;
+            color: #64748b;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-links a {
+            color: var(--fg-color);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            padding-bottom: 2px;
+            transition: border-color 0.3s;
+            font-size: 11px;
+        }
+
+        .nav-links a:hover {
+            border-color: var(--fg-color);
+        }
+
+        /* --- PAINÉIS LATERAIS --- */
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 280px;
+            height: 100%;
+        }
+
+        .data-box {
+            border: 1px solid var(--dim-color);
+            padding: 15px;
+            background: rgba(3, 3, 5, 0.65);
+            backdrop-filter: blur(5px);
+        }
+
+        .data-box.transparent {
+            background: transparent;
+            backdrop-filter: none;
+        }
+
+        .data-box p {
+            margin-bottom: 8px;
+            line-height: 1.4;
+            color: #94a3b8;
+        }
+
+        .data-box .highlight {
+            color: var(--fg-color);
+            font-weight: bold;
+        }
+
+        .data-box .success {
+            color: var(--terminal-green);
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed var(--dim-color);
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            color: var(--fg-color);
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        /* --- LISTAS DE MÓDULOS (Baseado no implementation_plan.md) --- */
+        .module-list {
+            list-style: none;
+        }
+
+        .module-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dotted var(--dim-color);
+            cursor: pointer;
+            transition: color 0.2s;
+            color: #94a3b8;
+        }
+
+        .module-list li:hover {
+            color: var(--fg-color);
+        }
+
+        .module-list li span.icon {
+            color: var(--dim-color);
+            margin-right: 10px;
+        }
+
+        /* --- TERMINAL TICKER --- */
+        #log-ticker {
+            height: 120px;
+            overflow: hidden;
+            font-size: 9px;
+        }
+
+        #log-ticker p {
+            margin-bottom: 4px;
+        }
+
+        /* --- BOTÃO DE AÇÃO --- */
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            margin-top: auto;
+            background: var(--fg-color);
+            color: var(--bg-color);
+            border: none;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+
+        .btn-primary:hover {
+            background: transparent;
+            color: var(--fg-color);
+            border: 1px solid var(--fg-color);
+        }
+
+        /* --- RODAPÉ --- */
+        .footer-metrics {
+            position: absolute;
+            bottom: 20px;
+            left: 320px;
+            right: 320px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #64748b;
+            border-top: 1px dashed var(--dim-color);
+            padding-top: 10px;
+        }
+
+        .blinking {
+            animation: blink 1s infinite step-end;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<!-- STREAMING_CHUNK:Building the layout and adding Cytoscape.js script... -->
+
+<body>
+
+    <!-- Efeitos Visuais Background -->
+    <div class="background-grid"></div>
+
+    <!-- CONTAINER DO MAPA MENTAL (A "Constelação") -->
+    <div id="cy"></div>
+
+    <div class="center-crosshair"></div>
+    <div class="crt-overlay"></div>
+
+    <!-- HUD Overlay -->
+    <div class="hud-wrapper">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="logo">\\\ AEGIS<span>OS</span></div>
+            <div class="nav-links">
+                <a href="Aegis_Cosmos_HUD.html">VOLTAR AO COSMOS 3D</a>
+            </div>
+        </div>
+
+        <!-- PAINEL ESQUERDO (Status & Logs) -->
+        <div class="panel">
+            <div class="data-box">
+                <div class="section-title">
+                    <span>> INTEGRIDADE DO SISTEMA</span>
+                    <span>[OK]</span>
+                </div>
+                <p>SQLITE DB LOCAL: <span class="success">CONECTADO</span></p>
+                <p>DIRETÓRIO CONTENT/: <span class="success">SINCRONIZADO</span></p>
+                <p>NÓS DE CONHECIMENTO: <span class="highlight">9 INDEXADOS</span></p>
+            </div>
+
+            <div class="data-box transparent">
+                <div class="section-title">
+                    <span>> DAEMON_LOGS</span>
+                    <span>---</span>
+                </div>
+                <div id="log-ticker">
+                    <p class="highlight">> INICIANDO AEGIS OS...</p>
+                    <p>> MONTANDO DIRETÓRIOS...</p>
+                    <p>> ANALISANDO FRONTMATTER YAML...</p>
+                </div>
+            </div>
+
+            <div class="data-box" style="margin-top: auto; border-color: var(--fg-color);">
+                <p>WIKILINKS: RESOLVIDOS</p>
+                <p class="highlight blinking">AGUARDANDO INPUT DO USUÁRIO_</p>
+            </div>
+        </div>
+
+        <!-- PAINEL DIREITO (Módulos & Kanban) -->
+        <div class="panel">
+            <div class="data-box transparent">
+                <div class="section-title">
+                    <span>> MÓDULOS CORE</span>
+                    <span>---</span>
+                </div>
+                <ul class="module-list">
+                    <li>
+                        <div><span class="icon">[*]</span>EXPLORADOR</div> <span>[MD]</span>
+                    </li>
+                    <li style="color: var(--fg-color);">
+                        <div><span class="icon">[*]</span>VISÃO EM GRAFO</div> <span>[CY]</span>
+                    </li>
+                    <li>
+                        <div><span class="icon">[*]</span>ROADMAPS</div> <span>[JSON]</span>
+                    </li>
+                    <li>
+                        <div><span class="icon">[*]</span>KANBAN</div> <span>[DB]</span>
+                    </li>
+                    <li>
+                        <div><span class="icon">[*]</span>MAPAS MENTAIS</div> <span>[DB]</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="data-box">
+                <div class="section-title">
+                    <span>> POMODORO TRACKER</span>
+                    <span>---</span>
+                </div>
+                <p>ESTADO: <span class="highlight">INATIVO</span></p>
+                <p>SESSÕES HOJE: <span class="highlight">0/8</span></p>
+                <p style="font-size: 8px; margin-top: 10px;">> REGISTRO DE TEMPO OFFLINE PRONTO.</p>
+            </div>
+
+            <a href="#" class="btn-primary">ENTRAR NO SISTEMA</a>
+        </div>
+    </div>
+
+    <!-- MÉTRICAS DE RODAPÉ -->
+    <div class="footer-metrics">
+        <span>LOC: BR/SP (SÃO PAULO)</span>
+        <span>MODO: TOTALMENTE OFFLINE</span>
+        <span>LATÊNCIA WS: <span class="success">1MS</span></span>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- LÓGICA DO CYTOSCAPE (A Constelação)        -->
+    <!-- ========================================== -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // Dados exatos extraídos do seu implementation_plan.md
+            const nodes = [
+                // Core
+                { data: { id: 'aegis', name: 'AEGIS CORE', weight: 40, type: 'core' } },
+                // Backend
+                { data: { id: 'python', name: 'Python', weight: 30, type: 'article' } },
+                { data: { id: 'docker', name: 'Docker', weight: 25, type: 'article' } },
+                { data: { id: 'fastapi', name: 'FastAPI', weight: 25, type: 'article' } },
+                { data: { id: 'linux', name: 'Linux', weight: 20, type: 'article' } },
+                // AI
+                { data: { id: 'llm', name: 'LLM', weight: 35, type: 'article' } },
+                { data: { id: 'rag', name: 'RAG', weight: 25, type: 'article' } },
+                { data: { id: 'agents', name: 'Agentes de IA', weight: 25, type: 'article' } },
+                // Math
+                { data: { id: 'calculus', name: 'Cálculo', weight: 20, type: 'article' } },
+                { data: { id: 'linear_algebra', name: 'Álgebra Linear', weight: 25, type: 'article' } }
+            ];
+
+            const edges = [
+                // Core conecta aos principais
+                { data: { source: 'aegis', target: 'python' } },
+                { data: { source: 'aegis', target: 'llm' } },
+                { data: { source: 'aegis', target: 'linear_algebra' } },
+
+                // Conexões extraídas do campo "related" e do texto do MD
+                { data: { source: 'python', target: 'fastapi' } },
+                { data: { source: 'python', target: 'docker' } },
+                { data: { source: 'python', target: 'llm' } },
+
+                { data: { source: 'docker', target: 'linux' } },
+                { data: { source: 'docker', target: 'fastapi' } },
+
+                { data: { source: 'fastapi', target: 'linux' } },
+
+                { data: { source: 'llm', target: 'rag' } },
+                { data: { source: 'llm', target: 'agents' } },
+
+                { data: { source: 'rag', target: 'agents' } },
+                { data: { source: 'rag', target: 'python' } },
+
+                { data: { source: 'calculus', target: 'linear_algebra' } },
+                { data: { source: 'calculus', target: 'llm' } },
+                { data: { source: 'linear_algebra', target: 'llm' } }
+            ];
+
+            // Inicialização do Cytoscape
+            const cy = cytoscape({
+                container: document.getElementById('cy'),
+                elements: { nodes: nodes, edges: edges },
+                style: [
+                    {
+                        // Estilo das Estrelas (Nós)
+                        selector: 'node',
+                        style: {
+                            'background-color': '#ffffff',
+                            'width': 'mapData(weight, 20, 40, 4, 12)', // Tamanho baseado na importância
+                            'height': 'mapData(weight, 20, 40, 4, 12)',
+                            'label': 'data(name)',
+                            'color': '#94a3b8',
+                            'font-family': 'JetBrains Mono, monospace',
+                            'font-size': '8px',
+                            'text-valign': 'top',
+                            'text-halign': 'right',
+                            'text-margin-x': 5,
+                            'text-margin-y': -2,
+                            'text-transform': 'uppercase',
+                            // Efeito de "Glow" embutido no nó
+                            'border-width': '2px',
+                            'border-color': 'rgba(255, 255, 255, 0.2)',
+                            'border-opacity': 0.5
+                        }
+                    },
+                    {
+                        // Nó Core (Aegis) brilha mais
+                        selector: 'node[type="core"]',
+                        style: {
+                            'width': 16,
+                            'height': 16,
+                            'color': '#ffffff',
+                            'font-weight': 'bold',
+                            'background-color': '#10b981', // Verde do terminal
+                            'border-color': 'rgba(16, 185, 129, 0.4)'
+                        }
+                    },
+                    {
+                        // Linhas de Constelação (Arestas)
+                        selector: 'edge',
+                        style: {
+                            'width': 1,
+                            'line-color': '#334155', // Cor de linha de guia de radar
+                            'curve-style': 'bezier',
+                            'opacity': 0.6
+                        }
+                    },
+                    {
+                        // Efeito Hover na estrela
+                        selector: 'node:active, node:hover',
+                        style: {
+                            'background-color': '#ffffff',
+                            'border-width': '6px',
+                            'border-color': 'rgba(255, 255, 255, 0.3)',
+                            'color': '#ffffff',
+                            'font-size': '10px'
+                        }
+                    }
+                ],
+                // Layout de simulação física (para parecer que estão flutuando no espaço)
+                layout: {
+                    name: 'cose',
+                    idealEdgeLength: 100,
+                    nodeOverlap: 20,
+                    refresh: 20,
+                    fit: true,
+                    padding: 50,
+                    randomize: true,
+                    componentSpacing: 100,
+                    nodeRepulsion: 400000,
+                    edgeElasticity: 100,
+                    nestingFactor: 5,
+                    gravity: 80,
+                    numIter: 1000,
+                    initialTemp: 200,
+                    coolingFactor: 0.95,
+                    minTemp: 1.0
+                },
+                // Interações permitidas
+                userZoomingEnabled: true,
+                userPanningEnabled: true,
+                boxSelectionEnabled: false
+            });
+
+            // Adiciona uma rotação suave contínua ao redor do centro (Pan/Zoom loop)
+            // Isso simula o movimento do globo/radar do vídeo Velasspace
+            let angle = 0;
+            const animateRadar = () => {
+                angle += 0.001;
+                const pan = cy.pan();
+                // Movimento sutil para simular flutuação
+                cy.pan({
+                    x: pan.x + Math.sin(angle) * 0.2,
+                    y: pan.y + Math.cos(angle) * 0.2
+                });
+                requestAnimationFrame(animateRadar);
+            };
+
+            // Inicia a animação após o layout terminar de se organizar
+            cy.ready(() => {
+                setTimeout(animateRadar, 2000);
+            });
+
+            // ==========================================
+            // LOGICA DE INTERFACE (Terminal Ticker)
+            // ==========================================
+            const tickerLogs = [
+                "> RESOLVENDO [[WIKILINKS]]...",
+                "> ATUALIZANDO BANCO SQLITE...",
+                "> GERANDO BACKLINKS...",
+                "> INDEXAÇÃO FULL-TEXT CONCLUÍDA.",
+                "> INICIANDO SERVIDOR WEBSOCKET NA PORTA 3000...",
+                "> CARREGANDO ROADMAPS (backend.json)...",
+                "> O SISTEMA ESTÁ PRONTO."
+            ];
+            const logTicker = document.getElementById('log-ticker');
+            let logIndex = 0;
+
+            setInterval(() => {
+                const newLog = document.createElement('p');
+                newLog.innerText = tickerLogs[logIndex];
+                logTicker.appendChild(newLog);
+
+                if (logTicker.children.length > 6) {
+                    logTicker.removeChild(logTicker.firstChild);
+                }
+                logIndex = (logIndex + 1) % tickerLogs.length;
+            }, 1800);
+        });
+    </script>
+</body>
+
+</html>

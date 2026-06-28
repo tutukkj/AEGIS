@@ -1,0 +1,256 @@
+/* Estilos Globais Customizados */
+
+/* Scrollbar Personalizado */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(225, 25%, 8%);
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(225, 15%, 20%);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(250, 85%, 65%);
+}
+
+/* Glassmorphism */
+.glass {
+  background: hsla(225, 20%, 12%, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsla(225, 15%, 25%, 0.4);
+}
+
+.glass-light {
+  background: hsla(225, 20%, 15%, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid hsla(225, 15%, 25%, 0.2);
+}
+
+/* Efeito de Brilho (Glow) */
+.glow-accent {
+  box-shadow: 0 0 20px 2px hsla(250, 85%, 65%, 0.15);
+}
+
+.glow-success {
+  box-shadow: 0 0 20px 2px hsla(150, 70%, 45%, 0.15);
+}
+
+/* Transições Suaves Padrão */
+.transition-all-300 {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Customizações do Editor Split Markdown */
+.editor-pane {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Estilização para tags markdown renderizadas */
+.markdown-preview h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid hsl(225, 15%, 20%);
+  padding-bottom: 0.5rem;
+}
+
+.markdown-preview h2 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-preview h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-preview p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+  color: hsl(220, 10%, 75%);
+}
+
+.markdown-preview a {
+  color: hsl(250, 85%, 65%);
+  text-decoration: none;
+  border-bottom: 1px dashed transparent;
+  transition: border-color 0.2s;
+}
+
+.markdown-preview a:hover {
+  border-bottom-color: hsl(250, 85%, 65%);
+}
+
+.markdown-preview ul, .markdown-preview ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.markdown-preview ul {
+  list-style-type: disc;
+}
+
+.markdown-preview ol {
+  list-style-type: decimal;
+}
+
+.markdown-preview li {
+  margin-bottom: 0.25rem;
+}
+
+.markdown-preview code {
+  background-color: hsl(225, 20%, 14%);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  color: hsl(38, 92%, 55%);
+}
+
+.markdown-preview pre {
+  background-color: hsl(225, 20%, 10%);
+  border: 1px solid hsl(225, 15%, 16%);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.markdown-preview pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+  font-size: 0.9em;
+}
+
+.markdown-preview blockquote {
+  border-left: 4px solid hsl(250, 85%, 65%);
+  background-color: hsla(250, 85%, 65%, 0.05);
+  padding: 0.75rem 1rem;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 1rem;
+}
+
+.markdown-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.markdown-preview th, .markdown-preview td {
+  border: 1px solid hsl(225, 15%, 20%);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.markdown-preview th {
+  background-color: hsl(225, 20%, 14%);
+  font-weight: 600;
+}
+
+.markdown-preview tr:nth-child(even) {
+  background-color: hsla(225, 20%, 14%, 0.3);
+}
+
+/* Callouts estilo Obsidian */
+.callout {
+  border-left: 4px solid;
+  border-radius: 0 8px 8px 0;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.callout-title {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.callout-note {
+  border-color: hsl(200, 85%, 55%);
+  background-color: hsla(200, 85%, 55%, 0.05);
+}
+.callout-note .callout-title {
+  color: hsl(200, 85%, 55%);
+}
+
+.callout-tip {
+  border-color: hsl(150, 70%, 45%);
+  background-color: hsla(150, 70%, 45%, 0.05);
+}
+.callout-tip .callout-title {
+  color: hsl(150, 70%, 45%);
+}
+
+.callout-warning {
+  border-color: hsl(38, 92%, 55%);
+  background-color: hsla(38, 92%, 55%, 0.05);
+}
+.callout-warning .callout-title {
+  color: hsl(38, 92%, 55%);
+}
+
+.callout-danger {
+  border-color: hsl(0, 75%, 55%);
+  background-color: hsla(0, 75%, 55%, 0.05);
+}
+.callout-danger .callout-title {
+  color: hsl(0, 75%, 55%);
+}
+
+/* WikiLinks renderizados */
+.wikilink {
+  color: hsl(250, 85%, 65%);
+  font-weight: 500;
+  border-bottom: 1px dashed hsla(250, 85%, 65%, 0.4);
+}
+.wikilink:hover {
+  border-bottom-style: solid;
+}
+.wikilink-broken {
+  color: hsl(0, 75%, 55%);
+  border-bottom-color: hsla(0, 75%, 55%, 0.4);
+}

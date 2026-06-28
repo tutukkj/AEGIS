@@ -1,0 +1,59 @@
+{
+  "slug": "ai-engineering",
+  "name": "Engenharia de IA",
+  "description": "Trilha para dominar os fundamentos matemáticos, modelos de linguagem em larga escala, RAG e agentes autônomos.",
+  "color": "purple",
+  "icon": "brain",
+  "nodes": [
+    {
+      "id": "linear_algebra",
+      "title": "Álgebra Linear",
+      "parent": null,
+      "article_slug": "algebra-linear",
+      "checklist": [
+        { "text": "Vetores e matrizes", "done": false },
+        { "text": "Produto escalar e similaridades", "done": false }
+      ]
+    },
+    {
+      "id": "calculus",
+      "title": "Cálculo Diferencial",
+      "parent": null,
+      "article_slug": "calculo",
+      "checklist": [
+        { "text": "Limites e Derivadas", "done": false },
+        { "text": "Gradient Descent", "done": false }
+      ]
+    },
+    {
+      "id": "llm",
+      "title": "Large Language Models",
+      "parent": "linear_algebra",
+      "article_slug": "llm",
+      "checklist": [
+        { "text": "Mecanismo de Atenção", "done": false },
+        { "text": "Fine-Tuning com LoRA", "done": false }
+      ]
+    },
+    {
+      "id": "rag",
+      "title": "Retrieval-Augmented Generation",
+      "parent": "llm",
+      "article_slug": "rag",
+      "checklist": [
+        { "text": "Bancos de dados vetoriais", "done": false },
+        { "text": "Hybrid Search", "done": false }
+      ]
+    },
+    {
+      "id": "agents",
+      "title": "Agentes Autônomos",
+      "parent": "rag",
+      "article_slug": "agentes-de-ia",
+      "checklist": [
+        { "text": "Loop ReAct", "done": false },
+        { "text": "Uso de ferramentas", "done": false }
+      ]
+    }
+  ]
+}
