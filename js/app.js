@@ -1,5 +1,7 @@
 // public/js/app.js
 
+// public/js/app.js - Trecho atualizado
+
 import { store } from './store.js';
 import { router } from './router.js';
 import { Sidebar } from './components/Sidebar.js';
@@ -19,7 +21,6 @@ class App {
   }
 
   async start() {
-    // 1. Verificar autenticação
     try {
       const auth = await fetch('/api/auth/check').then(r => r.json());
 
@@ -30,9 +31,9 @@ class App {
 
       store.setState('user', auth.user);
 
-      // 2. Inicializar a cena 3D (MOTOR DE FUNDO)
+      // 2. Inicializar a cena 3D (MOTOR DE CONSTELAÇÃO)
       this.globeScene = new GlobeScene('webgl-container');
-      window.globeScene = this.globeScene; // <-- ADICIONAR ESTA LINHA
+      window.globeScene = this.globeScene;
 
       // 3. Montar interface
       this.sidebar = new Sidebar('sidebar-container');
@@ -53,11 +54,11 @@ class App {
       // 8. Conectar WebSocket
       this.connectWebSocket();
 
-      // 9. Carregar dados iniciais do grafo (se houver)
+      // 9. Carregar dados iniciais do grafo
       await this.loadInitialGraphData();
 
-      console.log('🛸 Aegis inicializado com sucesso.');
-      Toast.success('Sistema Aegis online. Pronto para aprendizado.');
+      console.log('✦ Aegis Cosmos inicializado.');
+      Toast.success('Sistema Aegis online. Constelação pronta para exploração.');
 
     } catch (err) {
       console.error('Erro ao inicializar Aegis:', err);
@@ -70,15 +71,25 @@ class App {
       const graphData = await fetch('/api/graph').then(r => r.json());
 
       if (graphData && graphData.nodes && graphData.nodes.length > 0) {
-        // Converter dados para o formato esperado pelo GlobeScene
         const nodes = graphData.nodes.map(node => ({
           id: node.data.id,
           label: node.data.label,
-          color: node.data.realColor || 0x8b5cf6,
+          color: node.data.realColor || 0x5EEAD4,
           position: node.position || {
             x: (Math.random() - 0.5) * 20,
             y: (Math.random() - 0.5) * 20,
             z: (Math.random() - 0.5) * 10
+          },
+          data: {
+            slug: node.data.slug,
+            title: node.data.title,
+            description: node.data.description,
+            difficulty: node.data.difficulty,
+            status: node.data.status,
+            roadmap: node.data.roadmap,
+            estimatedHours: node.data.estimated_hours,
+            category: node.data.category,
+            tags: node.data.tags || []
           }
         }));
 
@@ -93,7 +104,6 @@ class App {
       }
     } catch (err) {
       console.warn('Erro ao carregar dados do grafo:', err);
-      // Não é crítico, o grafo será carregado depois pelo GraphView
     }
   }
 

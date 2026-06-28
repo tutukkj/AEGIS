@@ -1,4 +1,4 @@
-// public/js/components/MindMap3D.js
+// public/js/components/MindMap3D.js - Versão Cosmos Corrigida
 
 import { html, mount, el, on } from '../utils/dom.js';
 import { api } from '../utils/api.js';
@@ -13,17 +13,6 @@ export class MindMap3D {
         this.selectedNode = null;
         this.isEditing = false;
         this.isLoading = false;
-        this.nodePanel = null;
-        this.shootingStarInterval = null;
-
-        // Estado do mapa
-        this.state = {
-            zoom: 1,
-            rotation: { x: 0, y: 0 },
-            focusNode: null,
-            showLabels: true,
-            layout: 'tree'
-        };
     }
 
     async loadAndRender(mindmapId = null) {
@@ -57,9 +46,9 @@ export class MindMap3D {
         }
     }
 
-    // ============================================
-    // MÉTODOS DE RENDERIZAÇÃO
-    // ============================================
+    // ==========================================
+    // LISTA DE MAPAS MENTAIS
+    // ==========================================
 
     async renderList() {
         try {
@@ -72,43 +61,47 @@ export class MindMap3D {
 
             const template = `
                 <div class="h-full flex flex-col p-6 animate-fade-in">
-                    <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center justify-between mb-6 border-b border-border/40 pb-4">
                         <div>
-                            <h1 class="text-xl font-bold font-mono flex items-center gap-3">
-                                <i data-lucide="network" class="w-5 h-5 text-accent"></i>
+                            <h1 class="text-lg font-mono font-bold tracking-wider flex items-center gap-3">
+                                <span class="text-accent">✦</span>
                                 <span>MAPAS MENTAIS</span>
                             </h1>
-                            <p class="text-xs text-textSecondary mt-1">
-                                ${mindmaps.length} mapas · Constelações de conhecimento interativas
+                            <p class="text-[10px] text-textMuted font-mono">
+                                ${mindmaps.length} CONSTELAÇÕES · CLIQUE PARA EXPLORAR
                             </p>
                         </div>
-                        <button id="btn-new-mindmap" class="glass-hover px-4 py-2 rounded-xl text-xs font-mono border border-accent/40 text-accent hover:bg-accent/10 transition-all flex items-center gap-2">
-                            <i data-lucide="plus" class="w-4 h-4"></i>
-                            <span>NOVO MAPA</span>
+                        <button id="btn-new-mindmap" 
+                            class="border border-accent text-accent hover:bg-accent hover:text-bg px-4 py-2 text-[10px] font-mono transition-all duration-300">
+                            + NOVO MAPA
                         </button>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 flex-1 overflow-y-auto pb-4">
                         ${mindmaps.map(mm => `
-                            <div class="glass-hover rounded-2xl border border-border/40 p-6 cursor-pointer transition-all group" data-mindmap-id="${mm.id}">
-                                <div class="flex items-start justify-between mb-3">
+                            <div class="border border-border/40 p-6 cursor-pointer transition-all duration-300 hover:border-accent/50 group" 
+                                 data-mindmap-id="${mm.id}">
+                                <div class="flex items-start justify-between mb-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
-                                            <i data-lucide="${mm.icon || 'network'}" class="w-5 h-5"></i>
+                                        <div class="w-10 h-10 border border-accent/20 flex items-center justify-center text-accent">
+                                            <span class="text-lg">◈</span>
                                         </div>
                                         <div>
-                                            <h3 class="font-bold text-sm font-mono group-hover:text-accent transition-colors">${mm.name}</h3>
-                                            <p class="text-[10px] text-textMuted">${mm.node_count || 0} nós</p>
+                                            <h3 class="font-mono font-bold text-sm group-hover:text-accent transition-colors">
+                                                ${mm.name}
+                                            </h3>
+                                            <p class="text-[9px] text-textMuted font-mono">${mm.node_count || 0} NÓS</p>
                                         </div>
                                     </div>
-                                    <button class="btn-delete-mindmap opacity-0 group-hover:opacity-100 text-textMuted hover:text-error transition-all" data-mindmap-id="${mm.id}">
+                                    <button class="btn-delete-mindmap opacity-0 group-hover:opacity-100 text-textMuted hover:text-error transition-all" 
+                                            data-mindmap-id="${mm.id}">
                                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     </button>
                                 </div>
-                                <p class="text-xs text-textSecondary line-clamp-2">${mm.description || 'Mapa mental sem descrição'}</p>
-                                <div class="mt-4 flex items-center justify-between text-[10px] text-textMuted">
-                                    <span>Atualizado: ${new Date(mm.updated_at).toLocaleDateString('pt-BR')}</span>
-                                    <span class="text-accent">${mm.root_article_title || 'Em branco'}</span>
+                                <p class="text-[10px] text-textSecondary font-mono line-clamp-2">${mm.description || 'Sem descrição'}</p>
+                                <div class="mt-4 flex items-center justify-between text-[9px] text-textMuted font-mono border-t border-border/40 pt-3">
+                                    <span>ATUALIZADO: ${new Date(mm.updated_at).toLocaleDateString('pt-BR')}</span>
+                                    <span class="text-accent">${mm.root_article_title || 'EM BRANCO'}</span>
                                 </div>
                             </div>
                         `).join('')}
@@ -158,81 +151,66 @@ export class MindMap3D {
         }
     }
 
+    // ==========================================
+    // DETALHE DO MAPA MENTAL (VISUALIZAÇÃO 3D)
+    // ==========================================
+
     renderDetail(data) {
         if (!this.container || !data) return;
 
         const template = `
             <div class="h-full flex flex-col animate-fade-in">
+                <!-- Barra Superior -->
                 <div class="flex items-center justify-between p-4 border-b border-border/40 flex-shrink-0">
                     <div class="flex items-center gap-4">
-                        <a href="#mindmaps" class="text-textSecondary hover:text-textPrimary transition-colors">
-                            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        <a href="#mindmaps" class="text-textMuted hover:text-textPrimary transition-colors font-mono text-xs">
+                            ← VOLTAR
                         </a>
                         <div>
-                            <h1 class="text-lg font-bold font-mono flex items-center gap-3">
-                                <span>${data.name}</span>
-                                ${data.root_article_title ? `
-                                    <span class="text-[9px] font-mono text-textMuted bg-black/30 px-2 py-0.5 rounded border border-border/40">
-                                        📄 ${data.root_article_title}
-                                    </span>
-                                ` : ''}
+                            <h1 class="text-sm font-mono font-bold tracking-wider flex items-center gap-2">
+                                <span class="text-accent">✦</span>
+                                ${data.name}
                             </h1>
-                            <p class="text-xs text-textSecondary">${data.description || 'Mapa mental interativo'}</p>
+                            <p class="text-[9px] text-textMuted font-mono">${data.description || 'Constelação de conhecimento'}</p>
                         </div>
                     </div>
                     
                     <div class="flex items-center gap-2">
-                        <button id="btn-layout-tree" class="glass-hover px-3 py-1.5 rounded-lg text-[10px] font-mono border border-border/40 hover:text-accent transition-all flex items-center gap-1.5">
-                            <i data-lucide="git-branch" class="w-3.5 h-3.5"></i>
-                            <span>ÁRVORE</span>
+                        <button id="btn-layout-tree" class="border border-border/40 px-3 py-1.5 text-[9px] font-mono hover:border-accent/50 hover:text-accent transition-all">
+                            🌳 ÁRVORE
                         </button>
-                        <button id="btn-layout-radial" class="glass-hover px-3 py-1.5 rounded-lg text-[10px] font-mono border border-border/40 hover:text-accent transition-all flex items-center gap-1.5">
-                            <i data-lucide="target" class="w-3.5 h-3.5"></i>
-                            <span>RADIAL</span>
+                        <button id="btn-layout-radial" class="border border-border/40 px-3 py-1.5 text-[9px] font-mono hover:border-accent/50 hover:text-accent transition-all">
+                            ◎ RADIAL
                         </button>
-                        <button id="btn-layout-force" class="glass-hover px-3 py-1.5 rounded-lg text-[10px] font-mono border border-border/40 hover:text-accent transition-all flex items-center gap-1.5">
-                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                            <span>FORÇA</span>
+                        <button id="btn-layout-force" class="border border-border/40 px-3 py-1.5 text-[9px] font-mono hover:border-accent/50 hover:text-accent transition-all">
+                            ⚡ FORÇA
                         </button>
                         <span class="w-px h-6 bg-border/40 mx-1"></span>
-                        <button id="btn-toggle-labels" class="glass-hover px-3 py-1.5 rounded-lg text-[10px] font-mono border border-border/40 hover:text-accent transition-all flex items-center gap-1.5">
-                            <i data-lucide="text" class="w-3.5 h-3.5"></i>
-                            <span>RÓTULOS</span>
+                        <button id="btn-reset-view" class="border border-border/40 px-3 py-1.5 text-[9px] font-mono hover:border-accent/50 hover:text-accent transition-all">
+                            ⌖ RESET
                         </button>
-                        <button id="btn-zoom-in" class="glass-hover px-3 py-1.5 rounded-lg text-[10px] font-mono border border-border/40 hover:text-accent transition-all">
-                            <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+                        <button id="btn-edit-mindmap" class="border border-accent/40 text-accent px-3 py-1.5 text-[9px] font-mono hover:bg-accent hover:text-bg transition-all">
+                            ✎ EDITAR
                         </button>
-                        <button id="btn-zoom-out" class="glass-hover px-3 py-1.5 rounded-lg text-[10px] font-mono border border-border/40 hover:text-accent transition-all">
-                            <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <button id="btn-reset-view" class="glass-hover px-3 py-1.5 rounded-lg text-[10px] font-mono border border-border/40 hover:text-accent transition-all">
-                            <i data-lucide="maximize" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <span class="w-px h-6 bg-border/40 mx-1"></span>
-                        <button id="btn-edit-mindmap" class="glass-hover px-3 py-1.5 rounded-lg text-[10px] font-mono border border-accent/40 text-accent hover:bg-accent/10 transition-all flex items-center gap-1.5">
-                            <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-                            <span>EDITAR</span>
-                        </button>
-                        <button id="btn-save-mindmap" class="bg-accent hover:bg-accent-hover text-white px-4 py-1.5 rounded-lg text-[10px] font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-accent/20">
-                            <i data-lucide="save" class="w-3.5 h-3.5"></i>
-                            <span>SALVAR</span>
+                        <button id="btn-save-mindmap" class="bg-accent text-bg px-4 py-1.5 text-[9px] font-mono hover:bg-accent/80 transition-all">
+                            💾 SALVAR
                         </button>
                     </div>
                 </div>
                 
+                <!-- Container 3D -->
                 <div id="mindmap-3d-container" class="flex-1 relative overflow-hidden">
-                    <div id="mindmap-instructions" class="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 glass px-6 py-3 rounded-xl border border-border/40 text-center pointer-events-none transition-opacity duration-500">
-                        <span class="text-xs font-mono text-textSecondary">
-                            🖱️ <span class="text-accent">CLIQUE</span> nos nós para explorar · 
-                            Duplo clique para <span class="text-accent">RENOMEAR</span> · 
-                            <span class="text-accent">ARRASTE</span> para orbitar · 
-                            Scroll para <span class="text-accent">ZOOM</span>
+                    <div id="mindmap-instructions" class="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 border border-border/40 px-6 py-2 text-center pointer-events-none bg-bg/80 backdrop-blur-sm">
+                        <span class="text-[9px] font-mono text-textSecondary">
+                            🖱️ <span class="text-accent">CLIQUE</span> NOS NÓS · 
+                            <span class="text-accent">ARRASTE</span> PARA ORBITAR · 
+                            SCROLL PARA <span class="text-accent">ZOOM</span>
                         </span>
                     </div>
                     <div id="mindmap-loading" class="absolute inset-0 flex items-center justify-center bg-bg/80 z-10 transition-opacity duration-300">
                         <div class="flex flex-col items-center gap-3">
-                            <div class="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
-                            <span class="text-xs text-textSecondary font-mono">GERANDO CONSTELAÇÃO...</span>
+                            <div class="w-6 h-6 border border-accent border-t-transparent rounded-full animate-spin"></div>
+                            <span class="text-[9px] text-textMuted font-mono">GERANDO CONSTELAÇÃO...</span>
                         </div>
                     </div>
                 </div>
@@ -242,95 +220,149 @@ export class MindMap3D {
         mount(this.container, html(template));
         lucide.createIcons({ node: this.container });
 
-        this.initNodePanel();
         this.connectToGlobeScene(data);
         this.setupControls();
     }
 
-    // ============================================
-    // MÉTODOS DE INTEGRAÇÃO 3D
-    // ============================================
+    // ==========================================
+    // INTEGRAÇÃO COM O GLOBESCENE
+    // ==========================================
 
     connectToGlobeScene(data) {
+        // Verificar se o GlobeScene já existe
         if (window.globeScene) {
             this.globeScene = window.globeScene;
             const processedData = this.processMindMapData(data);
+
+            // Adicionar nós ao grafo
             this.globeScene.addGraphNodes(processedData.nodes, processedData.edges);
 
-            setTimeout(() => {
-                this.globeScene.applyLayout('tree');
-            }, 500);
+            // Configurar callbacks
+            this.globeScene.onNodeSelected = (nodeData) => {
+                this.selectedNode = nodeData;
+                this.showNodeInfo(nodeData);
+            };
 
+            this.globeScene.onNodeDeselected = () => {
+                this.selectedNode = null;
+                this.hideNodeInfo();
+            };
+
+            // Esconder loading
             const loadingEl = el('#mindmap-loading', this.container);
             if (loadingEl) {
                 loadingEl.classList.add('opacity-0', 'pointer-events-none');
                 setTimeout(() => loadingEl.remove(), 500);
             }
 
-            this.globeScene.onNodePanelClosed = () => {
-                this.deselectNode();
-            };
+            // Esconder instruções após alguns segundos
+            setTimeout(() => {
+                const instructions = el('#mindmap-instructions', this.container);
+                if (instructions) {
+                    instructions.style.opacity = '0';
+                    setTimeout(() => instructions.remove(), 500);
+                }
+            }, 5000);
 
-            this.setupNodeClickHandler();
         } else {
+            // Tentar novamente após delay
             setTimeout(() => this.connectToGlobeScene(data), 500);
         }
     }
 
+    // ==========================================
+    // PROCESSAMENTO DE DADOS DO MAPA MENTAL (CORRIGIDO)
+    // ==========================================
+
     processMindMapData(data) {
+        // Garantir que tree_data existe
+        const treeData = data.tree_data || { nodes: [], edges: [] };
         const nodes = [];
         const edges = [];
-        const treeData = data.tree_data || { nodes: [], edges: [] };
 
-        const levelColors = [0x8b5cf6, 0x60a5fa, 0x34d399, 0xfbbf24, 0xf472b6, 0xfb923c];
+        // Cores para diferentes níveis (módulos vs tópicos)
+        const levelColors = [
+            0x5EEAD4, // Nível 0 - Módulo (Ciano)
+            0x60A5FA, // Nível 1 - Azul
+            0x34D399, // Nível 2 - Verde
+            0xFBBF24, // Nível 3 - Amarelo
+            0xF472B6, // Nível 4 - Rosa
+            0xFB923C  // Nível 5 - Laranja
+        ];
+
+        // Gerador de IDs únicos
+        let idCounter = 0;
+        const generateId = () => {
+            return `node-${Date.now()}-${idCounter++}`;
+        };
 
         const processNode = (node, level = 0, parentId = null) => {
+            // Garantir que o nó tem um ID
+            const nodeId = node.id || node.data?.id || generateId();
             const color = levelColors[Math.min(level, levelColors.length - 1)];
-            const size = Math.max(0.3, 0.8 - level * 0.05);
+            const isRoot = level === 0;
+
+            // Gerar posição baseada no nível
+            const pos = node.position || this.generateNodePosition(level, nodeId);
 
             nodes.push({
-                id: node.id || `node-${Date.now()}-${Math.random()}`,
-                label: node.label || 'Nó',
+                id: nodeId,
+                label: node.label || node.data?.label || 'Nó',
                 color: color,
-                size: size,
-                position: node.position || this.generateNodePosition(level),
+                position: pos,
                 data: {
-                    slug: node.slug || null,
-                    title: node.label || 'Nó sem título',
-                    description: node.description || '',
+                    slug: node.slug || node.data?.slug || null,
+                    title: node.label || node.data?.label || 'Nó sem título',
+                    description: node.description || node.data?.description || '',
                     level: level,
-                    isRoot: level === 0
+                    isRoot: isRoot,
+                    category: isRoot ? 'module' : 'topic'
                 }
             });
 
             if (parentId) {
                 edges.push({
                     source: parentId,
-                    target: node.id || `node-${Date.now()}-${Math.random()}`
+                    target: nodeId
                 });
             }
 
-            if (node.children && node.children.length > 0) {
-                node.children.forEach(child => {
-                    processNode(child, level + 1, node.id);
+            // Processar filhos
+            const children = node.children || [];
+            if (children.length > 0) {
+                children.forEach(child => {
+                    processNode(child, level + 1, nodeId);
                 });
             }
         };
 
-        const rootNode = treeData.nodes.find(n => n.data.isRoot) || treeData.nodes[0];
+        // Encontrar nó raiz
+        const rootNode = treeData.nodes?.find(n => n.data?.isRoot) || treeData.nodes?.[0];
+
         if (rootNode) {
             processNode(rootNode, 0);
-        } else if (treeData.nodes.length > 0) {
+        } else if (treeData.nodes && treeData.nodes.length > 0) {
+            // Se não houver raiz definida, usar o primeiro nó como raiz
             processNode(treeData.nodes[0], 0);
+        } else {
+            // Se não houver nós, criar um nó raiz padrão
+            const defaultRoot = {
+                id: generateId(),
+                label: data.name || 'Mapa Mental',
+                data: { isRoot: true }
+            };
+            processNode(defaultRoot, 0);
         }
 
-        if (treeData.edges) {
+        // Adicionar arestas existentes (se houver)
+        if (treeData.edges && Array.isArray(treeData.edges)) {
             treeData.edges.forEach(edge => {
-                if (!edges.some(e => e.source === edge.data.source && e.target === edge.data.target)) {
-                    edges.push({
-                        source: edge.data.source,
-                        target: edge.data.target
-                    });
+                const source = edge.data?.source || edge.source;
+                const target = edge.data?.target || edge.target;
+                if (source && target) {
+                    if (!edges.some(e => e.source === source && e.target === target)) {
+                        edges.push({ source, target });
+                    }
                 }
             });
         }
@@ -338,84 +370,94 @@ export class MindMap3D {
         return { nodes, edges };
     }
 
-    generateNodePosition(level) {
-        const radius = 3 + level * 2;
-        const angle = Math.random() * Math.PI * 2;
-        const spread = 0.5 + level * 0.3;
+    // ==========================================
+    // GERADOR DE POSIÇÃO (CORRIGIDO)
+    // ==========================================
+
+    generateNodePosition(level, id) {
+        // Layout em árvore expansiva
+        const radius = 3 + level * 2.5;
+
+        // Gerar ângulo baseado no ID de forma consistente
+        let hash = 0;
+        if (id) {
+            const idStr = String(id);
+            for (let i = 0; i < idStr.length; i++) {
+                hash = ((hash << 5) - hash) + idStr.charCodeAt(i);
+                hash = hash & hash;
+            }
+        } else {
+            hash = Math.random() * 1000;
+        }
+
+        const angle = (Math.abs(hash) / 1000) * Math.PI * 2;
+        const spread = 0.6 + level * 0.2;
+
         return {
-            x: radius * Math.cos(angle) * spread,
+            x: radius * Math.cos(angle + level * 0.5) * spread,
             y: (Math.random() - 0.5) * 1.5,
-            z: radius * Math.sin(angle) * spread
+            z: radius * Math.sin(angle + level * 0.5) * spread
         };
     }
 
-    // ============================================
-    // MÉTODOS DE INTERAÇÃO
-    // ============================================
+    // ==========================================
+    // PAINEL DE INFORMAÇÕES DO NÓ
+    // ==========================================
 
-    setupNodeClickHandler() {
-        if (this.globeScene && this.globeScene.renderer) {
-            document.addEventListener('click', (e) => {
-                if (this.globeScene && this.globeScene.container.contains(e.target)) {
-                    const node = this.globeScene.getIntersectedNode(e);
-                    if (node) {
-                        this.selectNode(node);
-                    } else {
-                        this.deselectNode();
-                    }
-                }
-            });
+    showNodeInfo(nodeData) {
+        const panel = document.getElementById('node-panel');
+        if (!panel) return;
 
-            document.addEventListener('dblclick', (e) => {
-                if (this.globeScene && this.globeScene.container.contains(e.target)) {
-                    const node = this.globeScene.getIntersectedNode(e);
-                    if (node && this.isEditing) {
-                        this.editNodeLabel(node);
-                    }
-                }
-            });
-        }
-    }
+        const data = nodeData.data || {};
 
-    selectNode(node) {
-        this.selectedNode = node;
-        if (this.nodePanel) {
-            this.nodePanel.show(node);
-        }
-        if (this.globeScene) {
-            this.globeScene.highlightNode(node.id);
-        }
-        const instructions = el('#mindmap-instructions', this.container);
-        if (instructions) {
-            instructions.style.opacity = '0';
-            setTimeout(() => instructions.remove(), 500);
-        }
-    }
+        document.getElementById('p-title').textContent = data.title || nodeData.label || 'NÓ';
+        document.getElementById('p-desc').textContent = data.description || 'Sem descrição disponível.';
+        document.getElementById('p-status').textContent = data.status || 'NÃO INICIADO';
+        document.getElementById('p-diff').textContent = data.difficulty || 'INTERMEDIÁRIO';
+        document.getElementById('p-roadmap').textContent = data.roadmap || 'GERAL';
+        document.getElementById('p-time').textContent = data.estimatedHours ? `${data.estimatedHours}h` : 'N/A';
 
-    deselectNode() {
-        this.selectedNode = null;
-        if (this.nodePanel) {
-            this.nodePanel.hide();
+        // Tags
+        const tagsContainer = document.getElementById('p-tags');
+        if (tagsContainer && data.tags) {
+            tagsContainer.innerHTML = data.tags.map(tag =>
+                `<span class="border border-border/40 px-2 py-0.5 text-[9px] font-mono text-textSecondary">#${tag}</span>`
+            ).join('') || '<span class="text-[9px] text-textMuted font-mono">SEM TAGS</span>';
         }
-        if (this.globeScene) {
-            this.globeScene.unhighlightNode();
-        }
-    }
 
-    editNodeLabel(node) {
-        const newLabel = prompt('Editar nome do nó:', node.label);
-        if (newLabel && newLabel.trim() !== '') {
-            node.label = newLabel.trim();
-            if (this.globeScene) {
-                this.globeScene.updateNodeLabel(node.id, newLabel);
+        // Conexões
+        const connectionsContainer = document.getElementById('p-connections');
+        if (connectionsContainer && this.globeScene) {
+            const connections = this.globeScene.getGraphEdges()
+                .filter(e => e.source === nodeData.id || e.target === nodeData.id);
+
+            if (connections.length > 0) {
+                connectionsContainer.innerHTML = connections.map(conn => {
+                    const otherId = conn.source === nodeData.id ? conn.target : conn.source;
+                    const otherNode = this.globeScene.getGraphNodes().find(n => n.id === otherId);
+                    return `<div class="flex items-center justify-between text-[9px] font-mono py-1 border-b border-border/20">
+                        <span class="text-textMuted">→</span>
+                        <span class="text-textSecondary">${otherNode?.label || otherId}</span>
+                    </div>`;
+                }).join('');
+            } else {
+                connectionsContainer.innerHTML = '<span class="text-[9px] text-textMuted font-mono">NENHUMA CONEXÃO</span>';
             }
-            Toast.success('Nó renomeado!');
+        }
+
+        panel.classList.add('active');
+    }
+
+    hideNodeInfo() {
+        const panel = document.getElementById('node-panel');
+        if (panel) {
+            panel.classList.remove('active');
         }
     }
 
-    // ============================================
-    // MÉTODOS DE CONTROLE
-    // ============================================
+    // ==========================================
+    // CONTROLES
+    // ==========================================
 
     setupControls() {
         const layouts = ['tree', 'radial', 'force'];
@@ -423,7 +465,7 @@ export class MindMap3D {
             const btn = el(`#btn-layout-${type}`, this.container);
             if (btn) {
                 on(btn, 'click', () => {
-                    if (this.globeScene) {
+                    if (this.globeScene && this.globeScene.applyLayout) {
                         this.globeScene.applyLayout(type);
                         Toast.info(`🔄 Layout ${type.toUpperCase()}`);
                     }
@@ -431,42 +473,13 @@ export class MindMap3D {
             }
         });
 
-        const labelsBtn = el('#btn-toggle-labels', this.container);
-        if (labelsBtn) {
-            on(labelsBtn, 'click', () => {
-                this.state.showLabels = !this.state.showLabels;
-                if (this.globeScene) {
-                    this.globeScene.toggleLabels(this.state.showLabels);
-                }
-                labelsBtn.classList.toggle('text-accent');
-            });
-        }
-
-        const zoomIn = el('#btn-zoom-in', this.container);
-        const zoomOut = el('#btn-zoom-out', this.container);
-        if (zoomIn) {
-            on(zoomIn, 'click', () => {
-                this.state.zoom *= 1.2;
-                if (this.globeScene) {
-                    this.globeScene.setZoom(this.state.zoom);
-                }
-            });
-        }
-        if (zoomOut) {
-            on(zoomOut, 'click', () => {
-                this.state.zoom *= 0.8;
-                if (this.globeScene) {
-                    this.globeScene.setZoom(this.state.zoom);
-                }
-            });
-        }
-
         const resetBtn = el('#btn-reset-view', this.container);
         if (resetBtn) {
             on(resetBtn, 'click', () => {
-                this.state.zoom = 1;
                 if (this.globeScene) {
                     this.globeScene.resetCamera();
+                    this.globeScene.deselectNode();
+                    Toast.info('⌖ Câmera resetada');
                 }
             });
         }
@@ -476,7 +489,7 @@ export class MindMap3D {
             on(editBtn, 'click', () => {
                 this.isEditing = !this.isEditing;
                 editBtn.classList.toggle('bg-accent/20');
-                editBtn.classList.toggle('text-accent');
+                editBtn.textContent = this.isEditing ? '✎ EDITANDO' : '✎ EDITAR';
                 Toast.info(this.isEditing ? '✏️ Modo edição ativado' : '📖 Modo visualização');
             });
         }
@@ -488,6 +501,10 @@ export class MindMap3D {
             });
         }
     }
+
+    // ==========================================
+    // SALVAR MAPA MENTAL
+    // ==========================================
 
     async saveMindMap() {
         if (!this.mindmapId || !this.globeScene) return;
@@ -501,8 +518,8 @@ export class MindMap3D {
                     data: {
                         id: n.id,
                         label: n.label,
-                        isRoot: n.data.isRoot || false,
-                        slug: n.data.slug || null
+                        isRoot: n.data?.isRoot || false,
+                        slug: n.data?.slug || null
                     },
                     position: n.position
                 })),
@@ -523,117 +540,48 @@ export class MindMap3D {
         }
     }
 
-    // ============================================
-    // MÉTODOS DE UTILITÁRIOS
-    // ============================================
-
-    initNodePanel() {
-        if (!document.getElementById('node-panel')) {
-            const panel = document.createElement('div');
-            panel.id = 'node-panel';
-            panel.innerHTML = `
-                <div class="flex items-start justify-between mb-4">
-                    <div class="node-title" id="p-title">NODE_NAME</div>
-                    <button id="p-close" class="text-textMuted hover:text-textPrimary transition-colors">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </button>
-                </div>
-                <div class="node-desc" id="p-desc">Descrição do nó</div>
-                <div class="flex flex-col gap-1">
-                    <div class="node-row"><span>NÍVEL:</span><span id="p-level">0</span></div>
-                    <div class="node-row"><span>CONEXÕES:</span><span id="p-connections-count">0</span></div>
-                </div>
-                <div class="mt-4 pt-3 border-t border-border/40 flex gap-2">
-                    <button id="p-open-editor" class="btn-action flex-1">ABRIR NOTA</button>
-                </div>
-            `;
-            document.body.appendChild(panel);
-        }
-
-        import('./NodePanel.js').then(module => {
-            this.nodePanel = new module.NodePanel('node-panel');
-        });
-    }
-
-    renderEmptyList() {
-        if (!this.container) return;
-        const template = `
-            <div class="h-full flex flex-col items-center justify-center p-8 text-center">
-                <div class="w-16 h-16 bg-accent/10 border border-accent/20 rounded-2xl flex items-center justify-center text-accent mb-6">
-                    <i data-lucide="network" class="w-8 h-8"></i>
-                </div>
-                <h2 class="text-lg font-bold font-mono mb-2">NENHUM MAPA MENTAL</h2>
-                <p class="text-sm text-textSecondary max-w-md">Crie mapas mentais para visualizar suas ideias e conexões.</p>
-                <button id="btn-create-first" class="mt-6 bg-accent hover:bg-accent-hover text-white px-6 py-2 rounded-xl text-sm font-mono transition-all flex items-center gap-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    <span>CRIAR PRIMEIRO MAPA</span>
-                </button>
-            </div>
-        `;
-        mount(this.container, html(template));
-        lucide.createIcons({ node: this.container });
-
-        const createBtn = el('#btn-create-first', this.container);
-        if (createBtn) {
-            on(createBtn, 'click', () => this.showCreateModal());
-        }
-    }
-
-    renderError() {
-        if (!this.container) return;
-        const template = `
-            <div class="h-full flex flex-col items-center justify-center p-8 text-center">
-                <div class="w-16 h-16 bg-error/10 border border-error/20 rounded-2xl flex items-center justify-center text-error mb-6">
-                    <i data-lucide="alert-triangle" class="w-8 h-8"></i>
-                </div>
-                <h2 class="text-lg font-bold font-mono mb-2">ERRO AO CARREGAR</h2>
-                <p class="text-sm text-textSecondary max-w-md">Não foi possível carregar o mapa mental.</p>
-                <button id="retry-mindmap" class="mt-6 text-accent hover:underline text-sm font-mono">↻ TENTAR NOVAMENTE</button>
-            </div>
-        `;
-        mount(this.container, html(template));
-        lucide.createIcons({ node: this.container });
-
-        const retryBtn = el('#retry-mindmap', this.container);
-        if (retryBtn) {
-            on(retryBtn, 'click', () => this.loadAndRender(this.mindmapId));
-        }
-    }
+    // ==========================================
+    // MODAL DE CRIAÇÃO
+    // ==========================================
 
     showCreateModal() {
         const modal = document.createElement('div');
-        modal.className = 'fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in';
+        modal.className = 'fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50';
         modal.innerHTML = `
-            <div class="glass w-full max-w-md rounded-2xl p-6 flex flex-col gap-4 border border-border/60 shadow-2xl">
-                <div class="flex items-center justify-between border-b border-border/60 pb-3">
-                    <h3 class="font-bold font-mono text-sm">CRIAR MAPA MENTAL</h3>
-                    <button id="modal-close" class="text-textSecondary hover:text-textPrimary transition-colors">
+            <div class="border border-border/60 bg-bg p-6 w-full max-w-md">
+                <div class="flex items-center justify-between border-b border-border/40 pb-3 mb-4">
+                    <h3 class="font-mono font-bold text-sm tracking-wider">✦ NOVA CONSTELAÇÃO</h3>
+                    <button id="modal-close" class="text-textMuted hover:text-textPrimary transition-colors">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
                 <form id="create-mindmap-form" class="flex flex-col gap-4">
                     <div>
-                        <label for="mm-name" class="text-xs text-textSecondary font-mono">NOME DO MAPA</label>
-                        <input type="text" id="mm-name" placeholder="Ex: Arquitetura de Software" class="w-full bg-black/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-accent font-mono mt-1">
+                        <label class="text-[9px] text-textMuted font-mono uppercase tracking-wider">NOME</label>
+                        <input type="text" id="mm-name" placeholder="Ex: Arquitetura de Software" 
+                               class="w-full bg-black/40 border border-border/40 px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-accent/50 mt-1">
                     </div>
                     <div>
-                        <label for="mm-description" class="text-xs text-textSecondary font-mono">DESCRIÇÃO</label>
-                        <textarea id="mm-description" rows="2" placeholder="Descreva o objetivo deste mapa..." class="w-full bg-black/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-accent font-mono mt-1 resize-none"></textarea>
+                        <label class="text-[9px] text-textMuted font-mono uppercase tracking-wider">DESCRIÇÃO</label>
+                        <textarea id="mm-description" rows="2" placeholder="Descreva o objetivo..." 
+                                  class="w-full bg-black/40 border border-border/40 px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-accent/50 mt-1 resize-none"></textarea>
                     </div>
                     <div>
-                        <label for="mm-root-article" class="text-xs text-textSecondary font-mono">NOTA RAZ (OPCIONAL)</label>
-                        <select id="mm-root-article" class="w-full bg-black/30 border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-accent font-mono mt-1 text-textSecondary">
-                            <option value="">Começar em branco</option>
+                        <label class="text-[9px] text-textMuted font-mono uppercase tracking-wider">NOTA RAÍZ</label>
+                        <select id="mm-root-article" class="w-full bg-black/40 border border-border/40 px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-accent/50 mt-1 text-textSecondary">
+                            <option value="">COMEÇAR EM BRANCO</option>
                         </select>
-                        <p class="text-[9px] text-textMuted mt-1 font-mono">Selecionar uma nota irá gerar ramificações automáticas baseadas nos backlinks.</p>
                     </div>
-                    <button type="submit" class="bg-accent hover:bg-accent-hover text-white text-sm font-mono py-2.5 rounded-xl transition-all mt-2">CRIAR MAPA</button>
+                    <button type="submit" class="bg-accent text-bg py-2.5 font-mono text-sm hover:bg-accent/80 transition-all mt-2">
+                        CRIAR CONSTELAÇÃO
+                    </button>
                 </form>
             </div>
         `;
         document.body.appendChild(modal);
         lucide.createIcons({ node: modal });
 
+        // Carregar artigos para o select
         api.get('/api/articles').then(articles => {
             const select = modal.querySelector('#mm-root-article');
             if (select && articles) {
@@ -646,6 +594,7 @@ export class MindMap3D {
             }
         }).catch(() => { });
 
+        // Eventos
         const closeBtn = modal.querySelector('#modal-close');
         if (closeBtn) {
             on(closeBtn, 'click', () => modal.remove());
@@ -667,7 +616,7 @@ export class MindMap3D {
                 try {
                     const data = await api.post('/api/mindmaps', { name, description, rootArticleId });
                     if (data) {
-                        Toast.success('🗺️ Mapa mental criado!');
+                        Toast.success('🗺️ Constelação criada!');
                         modal.remove();
                         window.location.hash = `#mindmaps/${data.id}`;
                     }
@@ -682,161 +631,47 @@ export class MindMap3D {
         });
     }
 
-    // ============================================
-    // MÉTODOS DE ANIMAÇÃO (mantidos do arquivo anterior)
-    // ============================================
+    // ==========================================
+    // ESTADOS VAZIOS E ERRO
+    // ==========================================
 
-    animateMindMapExpansion() {
-        const nodes = this.globeScene?.getGraphNodes() || [];
-        if (nodes.length === 0) return;
+    renderEmptyList() {
+        if (!this.container) return;
+        const template = `
+            <div class="h-full flex flex-col items-center justify-center p-8 text-center">
+                <div class="text-6xl text-accent/30 mb-6">✦</div>
+                <h2 class="text-lg font-mono font-bold tracking-wider mb-2">NENHUMA CONSTELAÇÃO</h2>
+                <p class="text-sm text-textSecondary font-mono max-w-md">Crie mapas mentais para visualizar suas ideias e conexões.</p>
+                <button id="btn-create-first" class="mt-6 border border-accent text-accent hover:bg-accent hover:text-bg px-6 py-2 font-mono text-sm transition-all">
+                    + CRIAR PRIMEIRO MAPA
+                </button>
+            </div>
+        `;
+        mount(this.container, html(template));
+        lucide.createIcons({ node: this.container });
 
-        const root = nodes.find(n => n.data.isRoot);
-        if (!root) return;
-
-        const sorted = this.sortNodesByDepth(nodes);
-        sorted.forEach((node, index) => {
-            const delay = index * 150;
-            const nodeGroup = this.globeScene.graphGroup.children.find(
-                child => child.type === 'Group' && child.userData.id === node.id
-            );
-            if (nodeGroup) {
-                nodeGroup.scale.set(0, 0, 0);
-                setTimeout(() => {
-                    this.globeScene.animationEngine.animateScale(
-                        nodeGroup,
-                        new THREE.Vector3(1, 1, 1),
-                        400,
-                        'easeOutBack'
-                    );
-                }, delay);
-            }
-        });
-    }
-
-    sortNodesByDepth(nodes) {
-        const depths = new Map();
-        const visited = new Set();
-
-        const findDepth = (nodeId, depth) => {
-            if (visited.has(nodeId)) return;
-            visited.add(nodeId);
-            depths.set(nodeId, depth);
-
-            const children = nodes.filter(n => {
-                return this.globeScene.graphEdges.some(e =>
-                    e.source === nodeId && e.target === n.id
-                );
-            });
-            children.forEach(child => {
-                findDepth(child.id, depth + 1);
-            });
-        };
-
-        const root = nodes.find(n => n.data.isRoot);
-        if (root) {
-            findDepth(root.id, 0);
-        }
-
-        return nodes.sort((a, b) => {
-            return (depths.get(a.id) || 999) - (depths.get(b.id) || 999);
-        });
-    }
-
-    animateParentChildConnections() {
-        const edges = this.globeScene?.getGraphEdges() || [];
-        edges.forEach((edge, index) => {
-            const source = this.globeScene.graphGroup.children.find(
-                child => child.type === 'Group' && child.userData.id === edge.source
-            );
-            const target = this.globeScene.graphGroup.children.find(
-                child => child.type === 'Group' && child.userData.id === edge.target
-            );
-            if (source && target && this.globeScene.particleSystem) {
-                setTimeout(() => {
-                    this.globeScene.particleSystem.createPulsingConnection(
-                        source.position,
-                        target.position,
-                        { color: 0x4b5563, width: 0.02, pulseSpeed: 0.5 + Math.random() * 0.5 }
-                    );
-                }, index * 100);
-            }
-        });
-    }
-
-    highlightNodeWithRing(nodeId) {
-        const nodeGroup = this.globeScene?.graphGroup.children.find(
-            child => child.type === 'Group' && child.userData.id === nodeId
-        );
-        if (!nodeGroup || !this.globeScene.particleSystem) return;
-
-        const pos = nodeGroup.position.clone();
-        const ringParticles = this.globeScene.particleSystem.createParticleStream(
-            pos.clone().add(new THREE.Vector3(1.5, 0, 0)),
-            pos.clone().add(new THREE.Vector3(-1.5, 0, 0)),
-            { count: 25, interval: 20, color: 0x8b5cf6, size: 0.04, speed: 0.8 }
-        );
-        setTimeout(ringParticles, 3000);
-    }
-
-    createShootingStarEffect() {
-        if (!this.globeScene || !this.globeScene.particleSystem) return;
-        const nodes = this.globeScene.getGraphNodes();
-        if (nodes.length < 2) return;
-
-        const idx1 = Math.floor(Math.random() * nodes.length);
-        let idx2 = Math.floor(Math.random() * nodes.length);
-        while (idx2 === idx1) {
-            idx2 = Math.floor(Math.random() * nodes.length);
-        }
-
-        const node1 = nodes[idx1];
-        const node2 = nodes[idx2];
-        const startPos = node1.position.clone();
-        const endPos = node2.position.clone();
-
-        this.globeScene.particleSystem.createTrail(startPos, endPos, {
-            count: 30,
-            duration: 1500,
-            color: 0xfbbf24,
-            size: 0.1
-        });
-    }
-
-    startShootingStarCycle(interval = 5000) {
-        if (this.shootingStarInterval) {
-            clearInterval(this.shootingStarInterval);
-        }
-        this.shootingStarInterval = setInterval(() => {
-            this.createShootingStarEffect();
-        }, interval);
-    }
-
-    stopShootingStarCycle() {
-        if (this.shootingStarInterval) {
-            clearInterval(this.shootingStarInterval);
-            this.shootingStarInterval = null;
+        const createBtn = el('#btn-create-first', this.container);
+        if (createBtn) {
+            on(createBtn, 'click', () => this.showCreateModal());
         }
     }
 
-    startNodeBreathingEffect() {
-        const nodes = this.globeScene?.getGraphNodes() || [];
-        nodes.forEach(node => {
-            const nodeGroup = this.globeScene.graphGroup.children.find(
-                child => child.type === 'Group' && child.userData.id === node.id
-            );
-            if (nodeGroup) {
-                const sphere = nodeGroup.children.find(
-                    child => child.type === 'Mesh' && !child.material.wireframe
-                );
-                if (sphere) {
-                    this.globeScene.animationEngine.createPulseAnimation(sphere, {
-                        minScale: 0.8,
-                        maxScale: 1.2,
-                        speed: 0.5 + Math.random() * 0.5,
-                        phase: Math.random() * Math.PI * 2
-                    });
-                }
-            }
-        });
+    renderError() {
+        if (!this.container) return;
+        const template = `
+            <div class="h-full flex flex-col items-center justify-center p-8 text-center">
+                <div class="text-6xl text-error/30 mb-6">⚠</div>
+                <h2 class="text-lg font-mono font-bold tracking-wider mb-2">ERRO AO CARREGAR</h2>
+                <p class="text-sm text-textSecondary font-mono max-w-md">Não foi possível carregar a constelação.</p>
+                <button id="retry-mindmap" class="mt-6 text-accent hover:underline font-mono text-sm">↻ TENTAR NOVAMENTE</button>
+            </div>
+        `;
+        mount(this.container, html(template));
+        lucide.createIcons({ node: this.container });
+
+        const retryBtn = el('#retry-mindmap', this.container);
+        if (retryBtn) {
+            on(retryBtn, 'click', () => this.loadAndRender(this.mindmapId));
+        }
     }
 }
